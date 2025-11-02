@@ -566,4 +566,50 @@ according to the flow rules defined in the architecture.
 
 ## Project implementation
 
+To implement this pattern in our project, we created four subnets with specific roles:
+
+- **backend_net**: A private subnet that contains all backend services. It also includes the API Gateway, which is the only component authorized to communicate with the external world.  
+
+- **frontend_net**: A public subnet that hosts the frontend service and the API Gateway. The gateway is connected to both `frontend_net` and `backend_net`, serving as the only allowed communication bridge between the public and private networks.  
+
+- **db_net**: A dedicated subnet for database access. It allows the `route_service` to connect exclusively to its own database, ensuring that no other service can access it.  
+
+- **orchestration_net**: A subnet that hosts the API Gateway, facilitating communication and coordination among the different services.  
+
+
 ### Deployment View
+This view shows the subnets in the server as divided previously:
+<img src="./img/Lab5DeployProy.png" width="800">
+
+### Implementation
+In the `docker-compose.yaml` file of each service, it was necessary to connect the service to its corresponding subnets.  
+For instance, for the services that are in the **backend_net**, this would be the configuration that would be added:
+```yaml
+services:
+  authentication-service:
+    # Another service configurations 
+    networks:
+      - backend_net
+
+networks:
+  backend_net:
+    external: true
+```
+
+If the service needed more than one subnet connection, they would be added there too:
+```yaml
+services:
+  api-gateway:
+    # Another service configurations
+    networks:
+      - orchestration_net
+      - frontend_net
+      - backend_net
+networks:
+  orchestration_net:
+    external: true
+  frontend_net:
+    external: true
+  backend_net:
+    external: true
+```
