@@ -30,15 +30,15 @@ The Network Segmentation Pattern primarily addresses Confidentiality and Integri
 
 **Confidentiality**
 
-    It shields sensitive data and internal systems (located in the Private Subnet) from unauthorized disclosure by blocking direct access from external or less-trusted network segments.
+It shields sensitive data and internal systems (located in the Private Subnet) from unauthorized disclosure by blocking direct access from external or less-trusted network segments.
 
 **Integrity**
 
-    By controlling the traffic flow, it prevents unauthorized modification or deletion of data by restricting what an attacker can do even if they compromise a public-facing segment.
+By controlling the traffic flow, it prevents unauthorized modification or deletion of data by restricting what an attacker can do even if they compromise a public-facing segment.
 
 **Availability (Contribution)**
 
-    It limits the blast radius of an attack or failure. By containing a security incident within a specific network segment, the pattern ensures that critical services in other segments remain operational and available to users.
+It limits the blast radius of an attack or failure. By containing a security incident within a specific network segment, the pattern ensures that critical services in other segments remain operational and available to users.
 
 ## Example implementation
 
