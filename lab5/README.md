@@ -57,10 +57,13 @@ services in other segments remain operational and available to users.
 
 ### Components & Connectors (C&C) View
 
-_Hacer anotacion de que es simplemente descriptiva para el ejemplo, pero no es
-la vista que representa el patrón._
+**Note:** The components-and-connectors view does not represent the implemented pattern itself; it is presented solely to provide a complete understanding of the components involved in the scenario and how they interact with each other. Additionally, it gives context to the deployment view, where the implementation of the pattern is actually evident.
+
+<img src="./img/Lab5CandC.drawio.png" width="800">
 
 ### Deployment View
+
+<img src="./img/Lab5Deploy.drawio.png" width="800">
 
 ### Description of the example scenario
 
