@@ -148,6 +148,7 @@ services:
       - "5173:5173"
     networks:
       - frontend-net
+      - orchestration-net
     depends_on:
       - api-gateway
     restart: unless-stopped
@@ -157,10 +158,9 @@ services:
       context: ./api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     networks:
-      - frontend-net
       - orchestration-net
       - backend-net
     depends_on:
@@ -201,8 +201,8 @@ services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo-data:/data/db
     networks:
@@ -216,8 +216,8 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydatabase
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -237,12 +237,14 @@ networks:
 
   orchestration-net:
     driver: bridge
+    internal: true
     ipam:
       config:
         - subnet: 172.31.0.0/24
 
   backend-net:
     driver: bridge
+    internal: true
     ipam:
       config:
         - subnet: 172.32.0.0/24
@@ -265,18 +267,20 @@ The architecture implements four network segments:
 **1. Frontend Network (`frontend-net`) [Public segment]**
 
 - **Subnet**: `172.30.0.0/24`
-- **Connected Services**: `frontend-web` only
-- **Purpose**: Isolates the presentation layer, allowing only the frontend
-  application to communicate with the API gateway
+- **Connected Services**: `frontend-web`
+- **Purpose**: Isolates the presentation layer, providing the only publicly
+  accessible entry point to the application
 - **Security Benefit**: External-facing components are separated from internal
-  services
+  services, with no `internal: true` flag allowing controlled external access
 
 **2. Orchestration Network (`orchestration-net`) [Private segment]**
 
 - **Subnet**: `172.31.0.0/24`
 - **Connected Services**: `frontend-web`, `api-gateway`
-- **Purpose**: Reserved network for orchestration and management traffic
-- **Security Benefit**: Avoids mixing control traffic with data traffic
+- **Purpose**: Facilitates communication between the frontend and API gateway
+  while keeping this traffic isolated from backend services
+- **Security Benefit**: The `internal: true` flag prevents external routing and
+  internet access, ensuring orchestration traffic remains internal
 
 **3. Backend Network (`backend-net`) [Private segment]**
 
@@ -284,8 +288,9 @@ The architecture implements four network segments:
 - **Connected Services**: `api-gateway`, `users-service`, `entry-service`
 - **Purpose**: Enables communication between the API gateway and backend
   microservices
-- **Security Benefit**: Backend services are not directly accessible from the
-  frontend; all traffic must pass through the gateway
+- **Security Benefit**: The `internal: true` flag prevents external routing;
+  backend services are not directly accessible from the frontend, and all
+  traffic must pass through the gateway
 
 **4. Database Network (`database-net`) [Private segment]**
 
@@ -383,12 +388,14 @@ containers within that isolated network segment.
 docker network inspect [network_identifier]
 ```
 
-- The `frontend-net` (subnet 172.30.0.0/24) should contain the frontend container.
-- The `orchestration-net` (subnet 172.30.1.0/24) should include the frontend and orchestration containers.
-- The `backend-net` (subnet 172.30.2.0/24) should contain the backend containers
-  and the orchestration container.
-- The `database-net` (subnet 172.30.3.0/24) should include the database and backend
-  containers.
+- The `frontend-net` (subnet 172.30.0.0/24) should contain only the frontend
+  container.
+- The `orchestration-net` (subnet 172.31.0.0/24) should include the frontend and
+  api-gateway containers.
+- The `backend-net` (subnet 172.32.0.0/24) should contain the api-gateway,
+  users-service, and entry-service containers.
+- The `database-net` (subnet 172.34.0.0/24) should include the mongodb,
+  postgresdb, users-service, and entry-service containers.
 
 **5. Test connectivity between networks**
 
@@ -520,13 +527,15 @@ roles:
 - **backend_net**: A private subnet that contains all backend services. It also
   includes the API Gateway.
 
-- **frontend_net**: A public subnet that hosts the frontend service allowing the public access to the system.
+- **frontend_net**: A public subnet that hosts the frontend service allowing the
+  public access to the system.
 
 - **db_net**: A dedicated subnet for database access. It allows the
   `route_service` to connect exclusively to its own database, ensuring that no
   other service can access it.
 
-- **orchestration_net**: A private subnet that includes the frontend service and API Gateway service in a private context.
+- **orchestration_net**: A private subnet that includes the frontend service and
+  API Gateway service in a private context.
 
 ### Deployment View
 
