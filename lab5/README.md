@@ -908,10 +908,22 @@ docker exec routes_app sh -c "nc -zv routes_postgres 5432"
 
 This implementation delivers the following security guarantees:
 
-1. **Defense in Depth**: Multiple network layers prevent direct access to sensitive resources
-2. **Blast Radius Containment**: Compromise of one layer doesn't grant access to others
-3. **Principle of Least Privilege**: Services only have access to networks they require
-4. **Traffic Control**: All requests flow through defined choke points (API Gateway)
-5. **Data Protection**: Database access is strictly limited to authorized services
-6. **Monitoring and Observability**: Dedicated observability stack (Loki, Grafana, Promtail) provides visibility into cross-network traffic
-7. **Audit Trail**: Clear network boundaries enable comprehensive security logging
+1. **Single Entry Point**: Only the frontend container exposes ports (5173) to the host machine, creating a controlled, monitorable entry point that eliminates direct access to internal services
+
+2. **Port Exposure Minimization**: Using `expose` instead of `ports` for all internal services ensures they are completely unreachable from outside the Docker network, even from the host machine
+
+3. **Defense in Depth**: Multiple network layers prevent direct access to sensitive resources - attackers must traverse frontend → orchestration → backend → database
+
+4. **Blast Radius Containment**: Compromise of one layer doesn't grant access to others; even host-level compromise cannot directly reach backend services or databases
+
+5. **Principle of Least Privilege**: Services only have access to networks they require, and no service except frontend can be accessed from outside
+
+6. **Traffic Control**: All requests flow through defined choke points (API Gateway), which can enforce authentication, rate limiting, and request validation
+
+7. **Data Protection**: Database access is strictly limited to authorized services; databases are isolated in their own network with no external exposure
+
+8. **Attack Surface Reduction**: By not exposing backend services, API Gateway, or databases to the host, we eliminate entire classes of attacks (direct service exploitation, port scanning effectiveness)
+
+9. **Monitoring and Observability**: Dedicated observability stack (Loki, Grafana, Promtail) provides visibility into cross-network traffic patterns and anomaly detection
+
+10. **Audit Trail**: Clear network boundaries and single entry point enable comprehensive security logging and forensic analysis
