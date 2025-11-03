@@ -57,7 +57,11 @@ services in other segments remain operational and available to users.
 
 ### Components & Connectors (C&C) View
 
-**Note:** The components-and-connectors view does not represent the implemented pattern itself; it is presented solely to provide a complete understanding of the components involved in the scenario and how they interact with each other. Additionally, it gives context to the deployment view, where the implementation of the pattern is actually evident.
+**Note:** The components-and-connectors view does not represent the implemented
+pattern itself; it is presented solely to provide a complete understanding of
+the components involved in the scenario and how they interact with each other.
+Additionally, it gives context to the deployment view, where the implementation
+of the pattern is actually evident.
 
 <img src="./img/Lab5CandCFinal.drawio.png" width="800">
 
@@ -132,48 +136,6 @@ requirements:
 - **SR-5**: All inter-service communication must follow defined, auditable paths
 
 **Segmentation Strategy:**
-
-The architecture implements defense-in-depth through four network segments:
-
-1. **Frontend Network (`172.30.0.0/24`)**: Isolates user-facing components,
-   allowing the frontend to communicate only with the API gateway
-2. **Orchestration Network (`172.31.0.0/24`)**: Reserved for gateway management
-   and potential service mesh control plane traffic
-3. **Backend Network (`172.32.0.0/24`)**: Creates a DMZ for business logic
-   services, accessible only through the gateway
-4. **Database Network (`172.34.0.0/24`)**: Configured as an `internal` network
-   with no external routing, ensuring databases can only be reached by
-   authorized backend services
-
-**Attack Resistance:**
-
-This segmentation strategy achieves the following security properties:
-
-- **Controlled Entry Points**: The API gateway serves as a choke point where
-  authentication, authorization, rate limiting, and request validation occur
-  before reaching backend services
-- **Privilege Isolation**: The frontend has zero knowledge of backend service
-  endpoints or database connection strings
-- **Blast Radius Containment**: If the frontend is compromised, the attacker
-  gains no direct access to backend APIs or databases
-- **Traffic Inspection**: All requests traverse defined network boundaries,
-  enabling comprehensive logging, monitoring, and intrusion detection
-- **Database Hiding**: With the `internal: true` flag on the database network,
-  even if an attacker compromises a backend service, they cannot route database
-  traffic outside the Docker environment
-
-**Quality Attributes Achieved:**
-
-- **Confidentiality**: Sensitive data remains protected through layered access
-  controls
-- **Integrity**: Unauthorized modification is prevented by restricting write
-  access paths
-- **Availability**: Service isolation ensures that a failure or attack in one
-  segment doesn't cascade to others
-- **Auditability**: Clear network boundaries enable comprehensive security
-  logging and compliance reporting
-
-### Implementation specifications
 
 ```yaml
 services:
@@ -296,13 +258,9 @@ networks:
 #### Network Segmentation Architecture Explanation
 
 This `docker-compose.yml` file implements a **multi-tier network segmentation
-architecture** that isolates different layers of the application stack,
-following security best practices and the principle of least privilege.
+architecture** that isolates different layers of the application.
 
-##### Network Architecture Overview
-
-The implementation defines **four isolated networks**, each with a specific
-purpose and security boundary:
+The architecture implements four network segments:
 
 **1. Frontend Network (`frontend-net`)**
 
@@ -341,47 +299,39 @@ purpose and security boundary:
     authorized backend services
   - No direct database access from outside the Docker network
 
-##### Key Security Implementations
+**Attack Resistance:**
 
-**1. Gateway as Single Entry Point**
+This segmentation strategy achieves the following security properties:
 
-The `api-gateway` is the only service connected to multiple networks
-(`frontend-net`, `orchestration-net`, and `backend-net`), acting as a controlled
-bridge between layers. This enforces all inter-layer communication to pass
-through a single, auditable point.
+- **Controlled Entry Points**: The API gateway serves as a choke point where
+  authentication, authorization, rate limiting, and request validation occur
+  before reaching backend services
+- **Privilege Isolation**: The frontend has zero knowledge of backend service
+  endpoints or database connection strings
+- **Blast Radius Containment**: If the frontend is compromised, the attacker
+  gains no direct access to backend APIs or databases
+- **Traffic Inspection**: All requests traverse defined network boundaries,
+  enabling comprehensive logging, monitoring, and intrusion detection
+- **Database Hiding**: With the `internal: true` flag on the database network,
+  even if an attacker compromises a backend service, they cannot route database
+  traffic outside the Docker environment
 
-**2. Port Exposure Strategy**
+**Quality Attributes Achieved:**
 
-- `frontend-web`: Exposed on port `5173` (public access for development)
-- `api-gateway`: Exposed on port `8080` (public API endpoint)
-- Backend services (`users-service`, `entry-service`): Use `expose` instead of
-  `ports`, making them accessible only within Docker networks, not from the host
-  machine
-- Databases: Ports exposed for development purposes, but should be removed in
-  production environments
-
-**3. Network Isolation Levels**
-
-- **Level 1**: Frontend can only reach the gateway
-- **Level 2**: Gateway acts as a reverse proxy to backend services
-- **Level 3**: Backend services have exclusive database access
-- **Level 4**: Databases cannot initiate outbound connections (`internal: true`)
-
-**4. Subnet Segregation**
-
-Each network has a distinct subnet range, preventing IP conflicts and enabling
-network-level monitoring and policy enforcement:
-
-- Frontend: `172.30.0.0/24`
-- Orchestration: `172.31.0.0/24`
-- Backend: `172.32.0.0/24`
-- Database: `172.34.0.0/24`
+- **Confidentiality**: Sensitive data remains protected through layered access
+  controls
+- **Integrity**: Unauthorized modification is prevented by restricting write
+  access paths
+- **Availability**: Service isolation ensures that a failure or attack in one
+  segment doesn't cascade to others
+- **Auditability**: Clear network boundaries enable comprehensive security
+  logging and compliance reporting
 
 ### Steps to follow
 
 **1. Retrieve the Software System**
 
-Clone the application repository from the designated source using the
+Clone the application repository from the source repository using the
 `git clone` command:
 
 ```bash
@@ -566,28 +516,41 @@ according to the flow rules defined in the architecture.
 
 ## Project implementation
 
-To implement this pattern in our project, we created four subnets with specific roles:
+To implement this pattern in our project, we created four subnets with specific
+roles:
 
-- **backend_net**: A private subnet that contains all backend services. It also includes the API Gateway, which is the only component authorized to communicate with the external world.  
+- **backend_net**: A private subnet that contains all backend services. It also
+  includes the API Gateway, which is the only component authorized to
+  communicate with the external world.
 
-- **frontend_net**: A public subnet that hosts the frontend service and the API Gateway. The gateway is connected to both `frontend_net` and `backend_net`, serving as the only allowed communication bridge between the public and private networks.  
+- **frontend_net**: A public subnet that hosts the frontend service and the API
+  Gateway. The gateway is connected to both `frontend_net` and `backend_net`,
+  serving as the only allowed communication bridge between the public and
+  private networks.
 
-- **db_net**: A dedicated subnet for database access. It allows the `route_service` to connect exclusively to its own database, ensuring that no other service can access it.  
+- **db_net**: A dedicated subnet for database access. It allows the
+  `route_service` to connect exclusively to its own database, ensuring that no
+  other service can access it.
 
-- **orchestration_net**: A subnet that hosts the API Gateway, facilitating communication and coordination among the different services.  
-
+- **orchestration_net**: A subnet that hosts the API Gateway, facilitating
+  communication and coordination among the different services.
 
 ### Deployment View
+
 This view shows the subnets in the server as divided previously:
 <img src="./img/Lab5DeployProy.png" width="800">
 
 ### Implementation
-In the `docker-compose.yaml` file of each service, it was necessary to connect the service to its corresponding subnets.  
-For instance, for the services that are in the **backend_net**, this would be the configuration that would be added:
+
+In the `docker-compose.yaml` file of each service, it was necessary to connect
+the service to its corresponding subnets.  
+For instance, for the services that are in the **backend_net**, this would be
+the configuration that would be added:
+
 ```yaml
 services:
   authentication-service:
-    # Another service configurations 
+    # Another service configurations
     networks:
       - backend_net
 
@@ -596,7 +559,9 @@ networks:
     external: true
 ```
 
-If the service needed more than one subnet connection, they would be added there too:
+If the service needed more than one subnet connection, they would be added there
+too:
+
 ```yaml
 services:
   api-gateway:
