@@ -370,10 +370,10 @@ _Example_
 ```
 26546d47b752   bridge                   bridge    local
 153139c313bc   host                     host      local
-845a37fd2ed2   lab5_backend-net         bridge    local
-8aa492fb381d   lab5_database-net        bridge    local
-0bf713f93b8d   lab5_frontend-net        bridge    local
-f47827b7f6d1   lab5_orchestration-net   bridge    local
+845a37fd2ed2   <backend-net>         bridge    local
+8aa492fb381d   <database-net>        bridge    local
+0bf713f93b8d   <frontend-net>        bridge    local
+f47827b7f6d1   <orchestration-net>  bridge    local
 611d60704b9f   none                     null      local
 ```
 
@@ -385,7 +385,7 @@ IP addressing, network scope, and, **most importantly**, the list of connected
 containers within that isolated network segment.
 
 ```bash
-docker network inspect [network_identifier]
+docker network inspect <network_identifier>
 ```
 
 - The `frontend-net` (subnet 172.30.0.0/24) should contain only the frontend
@@ -415,16 +415,17 @@ tests:
   ```bash
   docker exec -it <frontend_container_name> sh
   ```
-- From the frontend container, attempt to access the orchestration service:
+- From the frontend container, attempt to access the orchestration (api gateway)
+  service:
 
   ```bash
-  $ curl http://orchestration:8080/api/users
-  $ curl http://orchestration:8080/api/entries
+  $ curl http://api-gateway:8080/api/users
+  $ curl http://api-gateway:8080/api/entries
   ```
 
   The first command should return a list of users, and the second a list of
-  entries. Both are accesible, as the frontend and orchestration containers
-  share the same network.
+  entries. Both are accesible, as the frontend and api-gateway containers share
+  the same network.
 
 - Attempt to access the backend services directly from the frontend container:
 
@@ -493,8 +494,8 @@ tests:
 - Attempt to access the orchestration service from the backend containers:
 
   ```bash
-  $ curl http://orchestration:8080/api/users
-  $ curl http://orchestration:8080/api/entries
+  $ curl http://api-gateway:8080/api/users
+  $ curl http://api-gateway:8080/api/entries
   ```
 
   Both commands should return successful responses.
