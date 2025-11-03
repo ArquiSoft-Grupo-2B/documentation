@@ -67,7 +67,7 @@ of the pattern is actually evident.
 
 ### Deployment View
 
-<img src="./img/Lab5Deploy.png" width="800">
+<img src="./img/Lab5Deployview.png" width="800">
 
 ### Description of the example scenario
 
