@@ -63,7 +63,7 @@ services in other segments remain operational and available to users.
 
 ### Deployment View
 
-<img src="./img/Lab5Deploy.drawio.png" width="800">
+<img src="./img/Lab5DeployFinal.drawio.png" width="800">
 
 ### Description of the example scenario
 
