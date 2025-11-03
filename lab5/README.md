@@ -927,3 +927,50 @@ This implementation delivers the following security guarantees:
 9. **Monitoring and Observability**: Dedicated observability stack (Loki, Grafana, Promtail) provides visibility into cross-network traffic patterns and anomaly detection
 
 10. **Audit Trail**: Clear network boundaries and single entry point enable comprehensive security logging and forensic analysis
+
+## Recommendations
+
+When implementing network segmentation in Docker, consider the following best
+practices:
+
+### Network Design
+
+- **Use Custom Bridge Networks**: Avoid the default bridge network; always
+  create custom networks with explicit subnet configurations
+- **Apply the Principle of Least Privilege**: Connect each service only to the
+  networks it absolutely requires
+- **Leverage the `internal: true` Flag**: Use this flag on private networks to
+  completely block external routing and internet access, ensuring true isolation
+  for sensitive segments
+
+### Security Considerations
+
+- **Minimize Port Exposure**: Use `expose` instead of `ports` for internal
+  services to prevent unnecessary host-level exposure
+- **Implement Defense in Depth**: Combine network segmentation with
+  application-level authentication, authorization, and encryption
+- **Restrict Database Access**: Always isolate databases in a dedicated network
+  accessible only by authorized backend services
+- **Document Network Topology**: Maintain clear documentation of network
+  segments, connected services, and allowed traffic flows
+
+### Operational Best Practices
+
+- **Test Network Isolation**: Regularly verify connectivity restrictions using
+  `docker exec` and tools like `curl`, `ping`, or `nc`
+- **Monitor Network Traffic**: Implement logging and monitoring solutions to
+  detect anomalous traffic patterns across network boundaries
+- **Use Meaningful Names**: Assign descriptive names to networks (e.g.,
+  `frontend-net`, `database-net`) to improve maintainability and reduce
+  configuration errors
+- **Plan IP Address Spaces**: Use non-overlapping CIDR blocks for different
+  network segments to avoid routing conflicts
+
+### Performance and Scalability
+
+- **Avoid Network Oversubscription**: Don't connect services to unnecessary
+  networks, as each network attachment adds overhead
+- **Consider Service Discovery**: Use Docker's built-in DNS for service
+  discovery within the same network instead of hardcoding IP addresses
+- **Plan for Growth**: Design your network architecture to accommodate future
+  services and scaling requirements without requiring major restructuring
