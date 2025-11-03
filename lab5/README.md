@@ -145,7 +145,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend-web
     ports:
-      - "5173:5173"
+      - '5173:5173'
     networks:
       - frontend-net
       - orchestration-net
@@ -159,7 +159,7 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     expose:
-      - "8080"
+      - '8080'
     networks:
       - orchestration-net
       - backend-net
@@ -175,7 +175,7 @@ services:
       dockerfile: Dockerfile
     container_name: users-service
     expose:
-      - "5000"
+      - '5000'
     networks:
       - backend-net
       - database-net
@@ -190,7 +190,7 @@ services:
       dockerfile: Dockerfile
     container_name: entry-service
     expose:
-      - "3000"
+      - '3000'
     networks:
       - backend-net
       - database-net
@@ -202,7 +202,7 @@ services:
     image: mongo:latest
     container_name: mongodb
     expose:
-      - "27017"
+      - '27017'
     volumes:
       - mongo-data:/data/db
     networks:
@@ -217,7 +217,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydatabase
     expose:
-      - "5432"
+      - '5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -521,62 +521,396 @@ according to the flow rules defined in the architecture.
 
 ## Project implementation
 
-To implement this pattern in our project, we created four subnets with specific
-roles:
+To implement this pattern in our project, we created four isolated subnets with specific
+roles, each designed to enforce strict network segmentation and minimize the attack surface:
 
-- **backend_net**: A private subnet that contains all backend services. It also
-  includes the API Gateway.
+- **backend_net** (172.28.0.0/16): A private subnet that contains all backend services including microservices, message brokers, and monitoring tools. It also includes the API Gateway to orchestrate backend communication.
 
-- **frontend_net**: A public subnet that hosts the frontend service allowing the
-  public access to the system.
+- **frontend_net** (172.27.0.0/16): A public subnet that hosts the frontend service, providing the only user-facing entry point to the system.
 
-- **db_net**: A dedicated subnet for database access. It allows the
-  `route_service` to connect exclusively to its own database, ensuring that no
-  other service can access it.
+- **db_net** (172.30.0.0/16): A dedicated database subnet that isolates all data persistence layers. It allows the `routes_app` service to connect exclusively to its PostgreSQL database, ensuring that no unauthorized service can access the data tier.
 
-- **orchestration_net**: A private subnet that includes the frontend service and
-  API Gateway service in a private context.
+- **orchestration_net** (172.29.0.0/16): A private subnet that creates a secure communication channel between the frontend service and API Gateway, ensuring all client requests are properly routed through the gateway.
 
 ### Deployment View
 
 This view shows the subnets in the server as divided previously:
 <img src="./img/Lab5DeployProy.png" width="800">
 
-### Implementation
+### Network Architecture Overview
 
-In the `docker-compose.yaml` file of each service, it was necessary to connect
-the service to its corresponding subnets.  
-For instance, for the services that are in the **backend_net**, this would be
-the configuration that would be added:
+The following table summarizes the network configuration and container distribution:
+
+| Network               | Subnet        | Type    | Connected Containers                                                                                   | Exposed Ports   | Purpose                                     |
+| --------------------- | ------------- | ------- | ------------------------------------------------------------------------------------------------------ | --------------- | ------------------------------------------- |
+| **frontend_net**      | 172.27.0.0/16 | Public  | runpath_frontend                                                                                       | **5173 (ONLY)** | User-facing presentation layer - sole entry |
+| **orchestration_net** | 172.29.0.0/16 | Private | runpath_frontend, api-gateway                                                                          | None            | Secure frontend-gateway communication       |
+| **backend_net**       | 172.28.0.0/16 | Private | api-gateway, authentication-service, notification-service, rabbit, routes_app, loki, grafana, promtail | None            | Application logic and services              |
+| **db_net**            | 172.30.0.0/16 | Private | routes_postgres, routes_adminer, routes_app                                                            | None            | Data persistence layer                      |
+
+**Critical Security Note**: Only the `runpath_frontend` container exposes port 5173 to the host machine. All other services communicate exclusively through internal Docker networks using the `expose` directive instead of `ports`, making them completely inaccessible from outside the Docker environment. This architecture ensures a **single point of entry** that can be properly secured, monitored, and controlled.
+
+### Detailed Network Segmentation
+
+#### 1. Frontend Network (`frontend_net`)
+
+**Subnet**: 172.27.0.0/16 | **Gateway**: 172.27.0.1
+
+This network segment serves as the **public-facing layer** of the application:
+
+```
+Containers:
+  - runpath_frontend (172.27.0.2) - Port 5173 exposed to host
+```
+
+**Security Properties**:
+
+- **ONLY** the frontend container has ports mapped to the host (5173:5173)
+- This is the **sole entry point** for external traffic into the entire system
+- Acts as the controlled entry point for end-users
+- No direct access to backend services or databases
+- All API requests must flow through the orchestration layer
+- No other service in the architecture exposes ports externally
+
+**Port Mapping Strategy**:
+
+```
+Host (External) → Port 5173 → runpath_frontend → orchestration_net → api-gateway
+                                                                    ↓
+                                                              Backend Services
+                                                                    ↓
+                                                                Databases
+```
+
+#### 2. Orchestration Network (`orchestration_net`)
+
+**Subnet**: 172.29.0.0/16 | **Gateway**: 172.29.0.1
+
+This network creates a **secure bridge** between the presentation and application layers:
+
+```
+Containers:
+  - runpath_frontend (172.29.0.3)
+  - api-gateway (172.29.0.2)
+```
+
+**Security Properties**:
+
+- Internal communication between frontend and API Gateway
+- Implements the Gateway pattern as a single entry point
+- Enforces authentication, authorization, and rate limiting
+- Frontend can only reach backend services through the gateway
+- Prevents direct frontend-to-microservice communication
+
+#### 3. Backend Network (`backend_net`)
+
+**Subnet**: 172.28.0.0/16 | **Gateway**: 172.28.0.1
+
+This network hosts the **application logic tier** with all microservices and supporting infrastructure:
+
+```
+Containers:
+  - api-gateway (172.28.0.2)          # Gateway and routing
+  - authentication-service (172.28.0.3) # User authentication
+  - rabbit (172.28.0.4)               # RabbitMQ message broker
+  - notification-service (172.28.0.5)  # Notifications handling
+  - routes_app (172.28.0.6)           # Routes management service
+  - loki (172.28.0.7)                 # Log aggregation
+  - grafana (172.28.0.8)              # Monitoring and visualization
+  - promtail (172.28.0.9)             # Log collection agent
+```
+
+**Security Properties**:
+
+- Complete isolation from the public internet
+- Microservices communicate only within this network
+- API Gateway acts as the only ingress point from orchestration_net
+- Message broker (RabbitMQ) enables asynchronous service communication
+- Observability stack (Loki, Grafana, Promtail) for monitoring and logging
+- No direct database access - services must go through db_net
+
+**Service Communication Flow**:
+
+```
+Frontend → Orchestration Net → API Gateway → Backend Services
+                                    ↓
+                              Message Broker (RabbitMQ)
+                                    ↓
+                          Async Processing (Notifications)
+```
+
+#### 4. Database Network (`db_net`)
+
+**Subnet**: 172.30.0.0/16 | **Gateway**: 172.30.0.1
+
+This network provides **strict data tier isolation**:
+
+```
+Containers:
+  - routes_adminer (172.30.0.2)      # Database management UI
+  - routes_postgres (172.30.0.3)     # PostgreSQL database
+  - routes_app (172.30.0.4)          # Routes service with DB access
+```
+
+**Security Properties**:
+
+- Complete isolation of data persistence layer
+- Only `routes_app` service can access the PostgreSQL database
+- `routes_adminer` provides administrative access for database management
+- No direct access from frontend or orchestration layers
+- Implements least privilege access - only authorized services have DB credentials
+
+**Data Access Pattern**:
+
+```
+routes_app (Backend) ←→ routes_postgres (Database)
+                  ↓
+            routes_adminer (Admin UI)
+```
+
+### Implementation Details
+
+#### Port Exposure Strategy: `ports` vs `expose`
+
+A critical security decision in this implementation is the use of `expose` instead of `ports` for all services except the frontend. Understanding this distinction is essential:
+
+**`ports` - Host Port Mapping (Used ONLY for Frontend)**
+
+```yaml
+ports:
+  - '5173:5173' # Maps host port 5173 to container port 5173
+```
+
+- Exposes the service to the **host machine** and potentially external networks
+- Allows access from `localhost:5173` or `<host-ip>:5173`
+- Used **ONLY** for `runpath_frontend` - the sole entry point
+
+**`expose` - Internal Docker Network Only (Used for All Other Services)**
+
+```yaml
+expose:
+  - '8080' # Makes port 8080 available ONLY to other containers
+```
+
+- Service is accessible **ONLY** within Docker networks
+- Cannot be reached from the host machine or external networks
+- Other containers in the same network can connect using `http://service-name:8080`
+- Used for API Gateway, all backend services, and databases
+
+**Security Impact:**
+
+| Configuration          | Accessibility                                          | Risk Level | Use Case                                |
+| ---------------------- | ------------------------------------------------------ | ---------- | --------------------------------------- |
+| `ports: - "8080:8080"` | Host + Docker networks + External (if firewall allows) | **HIGH**   | Frontend only                           |
+| `expose: - "8080"`     | Docker networks only                                   | **LOW**    | All internal services                   |
+| No port config         | Not accessible                                         | **LOWEST** | Services that don't need network access |
+
+This strategy ensures that even if an attacker gains access to the host machine, they **cannot directly access** backend services, the API Gateway, or databases - they can only reach the frontend application.
+
+#### Network Configuration in Docker Compose
+
+To implement this pattern, each service's `docker-compose.yaml` file was configured to connect to its designated network segments. The networks are defined as **external** to ensure they are created and managed independently from individual service stacks.
+
+**Example 1: Backend Service Configuration**
+
+For services that operate exclusively within the backend tier (e.g., authentication-service, notification-service), ports are **NOT exposed to the host** - they only use internal Docker networking:
 
 ```yaml
 services:
   authentication-service:
-    # Another service configurations
+    image: authentication-service:latest
+    container_name: authentication-service
+    expose:
+      - '5000' # Internal port only, not mapped to host
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgres/authdb
     networks:
       - backend_net
+    restart: unless-stopped
 
 networks:
   backend_net:
     external: true
 ```
 
-If the service needed more than one subnet connection, they would be added there
-too:
+**Key Security Feature**: Using `expose` instead of `ports` means the service is **only accessible within the Docker network**, not from the host machine or external networks. This prevents direct access to backend services.
+
+**Example 2: Multi-Network Service Configuration (API Gateway)**
+
+The API Gateway bridges multiple network segments but **does NOT expose ports to the host**. It's only accessible through internal Docker networks:
 
 ```yaml
 services:
   api-gateway:
-    # Another service configurations
+    image: nginx:alpine
+    container_name: api-gateway
+    expose:
+      - '8080' # Internal port only, not exposed to host
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
-      - orchestration_net
-      - frontend_net
-      - backend_net
+      - orchestration_net # Communication with frontend
+      - backend_net # Communication with microservices
+    restart: unless-stopped
+
 networks:
   orchestration_net:
-    external: true
-  frontend_net:
     external: true
   backend_net:
     external: true
 ```
+
+**Key Security Feature**: The API Gateway is accessible only from within the Docker networks (frontend can reach it via orchestration_net), but it's **not accessible from outside the Docker environment**.
+
+**Example 3: Database-Connected Service Configuration**
+
+For services that require database access (e.g., routes_app), no ports are exposed externally:
+
+```yaml
+services:
+  routes_app:
+    image: routes-service:latest
+    container_name: routes_app
+    expose:
+      - '3000' # Internal port only, not exposed to host
+    environment:
+      - DB_HOST=routes_postgres
+      - DB_PORT=5432
+      - DB_NAME=routesdb
+    networks:
+      - backend_net # Communication with other microservices
+      - db_net # Database access
+    depends_on:
+      - routes_postgres
+    restart: unless-stopped
+
+networks:
+  backend_net:
+    external: true
+  db_net:
+    external: true
+```
+
+**Key Security Feature**: The routes service can communicate with both the backend services and the database, but is **completely isolated from external access**.
+
+**Example 4: Frontend Service Configuration (ONLY Public Exposure)**
+
+The frontend is the **ONLY** service with ports mapped to the host, making it the sole entry point:
+
+```yaml
+services:
+  runpath_frontend:
+    image: runpath-frontend:latest
+    container_name: runpath_frontend
+    ports:
+      - '5173:5173' # ONLY the frontend exposes ports to host
+    networks:
+      - frontend_net
+      - orchestration_net
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+networks:
+  frontend_net:
+    external: true
+  orchestration_net:
+    external: true
+```
+
+**Critical Security Principle**: By exposing ports **only on the frontend**, we ensure:
+
+- All external traffic must enter through the frontend application
+- Backend services, API Gateway, and databases are completely unreachable from outside the Docker network
+- Attackers cannot directly target internal services even if they discover their existence
+- This creates a single, controlled entry point that can be monitored and protected
+
+### Network Creation and Validation
+
+#### Creating External Networks
+
+Before deploying the services, create the external networks manually:
+
+```bash
+# Create frontend network
+docker network create --driver bridge --subnet 172.27.0.0/16 frontend_net
+
+# Create orchestration network
+docker network create --driver bridge --subnet 172.29.0.0/16 orchestration_net
+
+# Create backend network
+docker network create --driver bridge --subnet 172.28.0.0/16 backend_net
+
+# Create database network
+docker network create --driver bridge --subnet 172.30.0.0/16 db_net
+```
+
+#### Verifying Network Segmentation
+
+**1. List all Docker networks:**
+
+```bash
+docker network ls
+```
+
+Expected output should include the four custom networks:
+
+```
+NETWORK ID     NAME                DRIVER    SCOPE
+8053be48d79a   frontend_net        bridge    local
+7277c1ae5d84   orchestration_net   bridge    local
+f6ed8b1c1459   backend_net         bridge    local
+4763ab4b4b24   db_net              bridge    local
+```
+
+**2. Inspect network connectivity:**
+
+Verify that containers are properly segmented by inspecting each network:
+
+```bash
+# Inspect frontend network
+docker network inspect frontend_net
+
+# Inspect orchestration network
+docker network inspect orchestration_net
+
+# Inspect backend network
+docker network inspect backend_net
+
+# Inspect database network
+docker network inspect db_net
+```
+
+**3. Test network isolation:**
+
+Execute connectivity tests to validate segmentation:
+
+```bash
+# Test 1: Verify frontend cannot directly access backend services
+docker exec runpath_frontend sh -c "nc -zv authentication-service 5000"
+# Expected: Connection refused or name resolution failure
+
+# Test 2: Verify frontend can reach API Gateway through orchestration network
+docker exec runpath_frontend sh -c "curl -f http://api-gateway:8080/health"
+# Expected: HTTP 200 OK
+
+# Test 3: Verify backend services cannot directly access database
+docker exec authentication-service sh -c "nc -zv routes_postgres 5432"
+# Expected: Connection refused (unless service is routes_app)
+
+# Test 4: Verify routes_app can access database
+docker exec routes_app sh -c "nc -zv routes_postgres 5432"
+# Expected: Connection successful (port 5432 open)
+```
+
+### Security Benefits Achieved
+
+This implementation delivers the following security guarantees:
+
+1. **Defense in Depth**: Multiple network layers prevent direct access to sensitive resources
+2. **Blast Radius Containment**: Compromise of one layer doesn't grant access to others
+3. **Principle of Least Privilege**: Services only have access to networks they require
+4. **Traffic Control**: All requests flow through defined choke points (API Gateway)
+5. **Data Protection**: Database access is strictly limited to authorized services
+6. **Monitoring and Observability**: Dedicated observability stack (Loki, Grafana, Promtail) provides visibility into cross-network traffic
+7. **Audit Trail**: Clear network boundaries enable comprehensive security logging
