@@ -63,11 +63,11 @@ the components involved in the scenario and how they interact with each other.
 Additionally, it gives context to the deployment view, where the implementation
 of the pattern is actually evident.
 
-<img src="./img/Lab5CandCFinal.drawio.png" width="800">
+<img src="./img/Lab5CandC.png" width="800">
 
 ### Deployment View
 
-<img src="./img/Lab5DeployFinal.drawio.png" width="800">
+<img src="./img/Lab5Deploy.png" width="800">
 
 ### Description of the example scenario
 
