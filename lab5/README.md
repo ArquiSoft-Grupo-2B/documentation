@@ -59,7 +59,7 @@ services in other segments remain operational and available to users.
 
 **Note:** The components-and-connectors view does not represent the implemented pattern itself; it is presented solely to provide a complete understanding of the components involved in the scenario and how they interact with each other. Additionally, it gives context to the deployment view, where the implementation of the pattern is actually evident.
 
-<img src="./img/Lab5CandC.drawio.png" width="800">
+<img src="./img/Lab5CandCFinal.drawio.png" width="800">
 
 ### Deployment View
 
