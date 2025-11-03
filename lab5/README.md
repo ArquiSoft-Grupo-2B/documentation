@@ -262,23 +262,23 @@ architecture** that isolates different layers of the application.
 
 The architecture implements four network segments:
 
-**1. Frontend Network (`frontend-net`)**
+**1. Frontend Network (`frontend-net`) [Public segment]**
 
 - **Subnet**: `172.30.0.0/24`
-- **Connected Services**: `frontend-web`, `api-gateway`
+- **Connected Services**: `frontend-web` only
 - **Purpose**: Isolates the presentation layer, allowing only the frontend
   application to communicate with the API gateway
 - **Security Benefit**: External-facing components are separated from internal
   services
 
-**2. Orchestration Network (`orchestration-net`)**
+**2. Orchestration Network (`orchestration-net`) [Private segment]**
 
 - **Subnet**: `172.31.0.0/24`
-- **Connected Services**: `api-gateway` only
+- **Connected Services**: `frontend-web`, `api-gateway`
 - **Purpose**: Reserved network for orchestration and management traffic
 - **Security Benefit**: Avoids mixing control traffic with data traffic
 
-**3. Backend Network (`backend-net`)**
+**3. Backend Network (`backend-net`) [Private segment]**
 
 - **Subnet**: `172.32.0.0/24`
 - **Connected Services**: `api-gateway`, `users-service`, `entry-service`
@@ -287,7 +287,7 @@ The architecture implements four network segments:
 - **Security Benefit**: Backend services are not directly accessible from the
   frontend; all traffic must pass through the gateway
 
-**4. Database Network (`database-net`)**
+**4. Database Network (`database-net`) [Private segment]**
 
 - **Subnet**: `172.34.0.0/24`
 - **Connected Services**: `users-service`, `entry-service`, `mongodb`,
@@ -383,13 +383,11 @@ containers within that isolated network segment.
 docker network inspect [network_identifier]
 ```
 
-- The `frontend-net` (subnet 172.30.0.0/24)should contain the frontend container
-  and the orchestration container.
-- The `orchestration-net` (subnet 172.30.1.0/24) should only include the
-  orchestration container.
+- The `frontend-net` (subnet 172.30.0.0/24) should contain the frontend container.
+- The `orchestration-net` (subnet 172.30.1.0/24) should include the frontend and orchestration containers.
 - The `backend-net` (subnet 172.30.2.0/24) should contain the backend containers
   and the orchestration container.
-- The `database-net` (subnet 172.30.3.0/24) should only include the database
+- The `database-net` (subnet 172.30.3.0/24) should include the database and backend
   containers.
 
 **5. Test connectivity between networks**
@@ -520,20 +518,15 @@ To implement this pattern in our project, we created four subnets with specific
 roles:
 
 - **backend_net**: A private subnet that contains all backend services. It also
-  includes the API Gateway, which is the only component authorized to
-  communicate with the external world.
+  includes the API Gateway.
 
-- **frontend_net**: A public subnet that hosts the frontend service and the API
-  Gateway. The gateway is connected to both `frontend_net` and `backend_net`,
-  serving as the only allowed communication bridge between the public and
-  private networks.
+- **frontend_net**: A public subnet that hosts the frontend service allowing the public access to the system.
 
 - **db_net**: A dedicated subnet for database access. It allows the
   `route_service` to connect exclusively to its own database, ensuring that no
   other service can access it.
 
-- **orchestration_net**: A subnet that hosts the API Gateway, facilitating
-  communication and coordination among the different services.
+- **orchestration_net**: A private subnet that includes the frontend service and API Gateway service in a private context.
 
 ### Deployment View
 
