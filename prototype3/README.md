@@ -100,8 +100,6 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `runpath-broker` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
 | `API Gateway` | Express Gateway | Unified entry point; manages authentication and routes requests. | Connects clients (web and mobile) with all backend microservices. |
 
----
-
 ### Connector Description
 
 #### Authentication Service Connectors
@@ -198,8 +196,6 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Components:** Web Browser ↔ runpath-frontend-ssr (Next.js)
    - **Protocol:** HTTP
    - **Communication:** Client→Server, Synchronous Request/Response
-
----
 
 ##### Mobile Client Connectors
 
