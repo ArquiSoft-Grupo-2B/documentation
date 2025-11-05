@@ -492,13 +492,57 @@ Manages message composition and delivery:
 
 ## Security
 
-### Scenario #1
+### Scenario #1 (Secure Channel: HTTPS/TLS)
 
-### Scenario #2
+* **Source:** Any person or entity that wants to access/modify sensible (or not) data of the system.
+* **Stimulus:** Attempt to intercept, read ("acquire") and/or alter ("modify") the data packets being exchanged (Man-in-the-Middle).
+* **Artifact:** The communication channel.
+* **Enviroment:** Normal operation.
+* **Response:** The system, using the HTTPS (TLS) protocol, encrypts all data in transit. It also authenticates the server (proving it's the right one) and applies integrity checks (like HMAC) to the data.
+* **Response measure:**
+    * **Confidentiality:** The attacker is unable to read the plain-text content of the data (it remains encrypted).
+    * **Integrity:** Any modification to the data by the attacker is detected by the client or server (due to the integrity check failing), and the tampered data is rejected.
 
-### Scenario #3
+---
 
-### Scenario #4
+### Scenario #2 (Reverse Proxy: Limit Access)
+
+* **Source:** Any external malicious entity (attacker or automated scanner) from the internet.
+* **Stimulus:** Attempts to access the private components of the system, bypass public access controls, or identify the internal structure and IP addresses of the backend servers.
+* **Artifact:** The Private Components/Backend Network.
+* **Enviroment:** Normal operation with high volume of traffic requests.
+* **Response:** The Reverse Proxy acts as a layer of indirection, hiding the IP and server headers of the backend components and only forwarding explicitly authorized, non-malicious requests based on routing and load-balancing rules.
+* **Response measure:**
+    * **Access Control:** All unauthorized attempts to access or bypass the proxy to reach a private component are blocked.
+    * **Non-Repudiation (Server Anonymity):** The attacker cannot determine the private IP address, software details, or internal architecture of the backend system.
+
+---
+
+### Scenario #3 (Network Segmentation: Containment)
+
+* **Source:** An internal or external attacker who has already successfully gained initial access/a foothold on one part of the network (e.g., a non-critical server in the public subnet).
+* **Stimulus:** Attempts lateral movement—sending IP packets to communicate with resources (e.g., a database server) located in the separate, private subnet.
+* **Artifact:** The Internal Network Segments (specifically, the target segment)
+* **Enviroment:** Post-compromise of a low-value asset in a public segment.
+* **Response:** The network is structurally configured using distinct IP subnets and VLANs to achieve logical separation. The network routing policy is designed to prevent the flow of unsolicited or unauthorized traffic packets from the public subnet directly to the private subnet, thus isolating the sensitive resources.
+* **Response measure:** 
+It is important to consider that we cannot ensure the following elements, however, the response helps with the mitigation of them.
+
+   * **Containment:** The attacker's attempt to send packets to the sensitive private segment is rejected by the routing/switching infrastructure at the subnet boundary, isolating the incident to the initially compromised zone.
+   * **Confidentiality/Integrity:** The high-value assets in the private subnet remain inaccessible and uncompromised, preventing widespread damage following a localized breach.
+
+---
+
+### Scenario #4 (WAF: Detect Attack)
+
+* **Source:** An attacker or automated botnet attempting to degrade or halt application service availability.
+* **Stimulus:** Submits an overwhelming volume of requests targeting a single, resource-intensive endpoint (e.g., complex search, login form, or API call)
+* **Artifact:** The entire system. However, it also can be seen as the component whose Availability is targeted.
+* **Enviroment:** Normal operation, handling legitimate HTTP/S requests alongside a surge of malicious traffic.
+* **Response:** The Web Application Firewall (WAF) analyzes the traffic flow for behavioral anomalies, such as request rates exceeding established thresholds from a single source or IP range. It then applies rate limiting and/or connection throttling to the abusive traffic pattern and drops the offending requests.
+* **Response measure:**
+    * **Availability (Service Denial Prevention):** The WAF sustains the service's availability for legitimate users by shedding the malicious load.
+    * **Throughput/Latency:** The rate of processing for legitimate requests is maintained above a critical threshold, and latency remains within acceptable bounds, despite the attack.
 
 ### Architectural tactics applied
 
