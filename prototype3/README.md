@@ -492,7 +492,7 @@ Manages message composition and delivery:
 
 ## Security
 
-### Scenario #1 (Secure Channel: HTTPS/TLS)
+### Scenario #1 - Unauthorized Interception and Network Link Compromise
 
 * **Source:** Any person or entity that wants to access/modify sensible (or not) data of the system.
 * **Stimulus:** Attempt to intercept, read ("acquire") and/or alter ("modify") the data packets being exchanged (Man-in-the-Middle).
@@ -505,11 +505,11 @@ Manages message composition and delivery:
 
 ---
 
-### Scenario #2 (Reverse Proxy: Limit Access)
+### Scenario #2 - 
 
 * **Source:** Any external malicious entity (attacker or automated scanner) from the internet.
-* **Stimulus:** Attempts to access the private components of the system, bypass public access controls, or identify the internal structure and IP addresses of the backend servers.
-* **Artifact:** The Private Components/Backend Network.
+* **Stimulus:** Attempts to access the private components of the system.
+* **Artifact:** The Private/Critical Components.
 * **Enviroment:** Normal operation with high volume of traffic requests.
 * **Response:** The Reverse Proxy acts as a layer of indirection, hiding the IP and server headers of the backend components and only forwarding explicitly authorized, non-malicious requests based on routing and load-balancing rules.
 * **Response measure:**
@@ -518,9 +518,9 @@ Manages message composition and delivery:
 
 ---
 
-### Scenario #3 (Network Segmentation: Containment)
+### Scenario #3 - Public Exposure of Critical Components
 
-* **Source:** An internal or external attacker who has already successfully gained initial access/a foothold on one part of the network (e.g., a non-critical server in the public subnet).
+* **Source:** An internal or external attacker who has already successfully gained initial access/a foothold on one part of the network.
 * **Stimulus:** Attempts lateral movement—sending IP packets to communicate with resources (e.g., a database server) located in the separate, private subnet.
 * **Artifact:** The Internal Network Segments (specifically, the target segment)
 * **Enviroment:** Post-compromise of a low-value asset in a public segment.
@@ -533,7 +533,7 @@ It is important to consider that we cannot ensure the following elements, howeve
 
 ---
 
-### Scenario #4 (WAF: Detect Attack)
+### Scenario #4 - 
 
 * **Source:** An attacker or automated botnet attempting to degrade or halt application service availability.
 * **Stimulus:** Submits an overwhelming volume of requests targeting a single, resource-intensive endpoint (e.g., complex search, login form, or API call)
