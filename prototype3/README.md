@@ -34,7 +34,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 ### C&C View
 
 <p align="center">
-<img src="./imgs/cc_view_prototype2.svg">
+<img src="./imgs/cc_view_prototype3.svg">
 </p>
 
 ### Components Description
@@ -75,7 +75,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 ---
 
-#### `runpath-broker`
+#### `runpath-notifications-queue`
 - **Technology:** RabbitMQ
 - **Description:** Messaging middleware that acts as an asynchronous intermediary between `runpath-routes` and `runpath-notifications`. It receives route completion events and delivers them for subsequent processing and user notification.
 
@@ -83,7 +83,15 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 #### `API Gateway`
 - **Technology:** Express Gateway
-- **Description:** Unified entry point that manages requests coming from clients (frontend and mobile). It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
+- **Description:** Internal gateway that receives requests from the mobile reverse proxy and the web frontend. It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
+
+#### `mobile-reverse-proxy`
+- **Technology:** Nginx
+- **Description:** Responsible for exposing a public endpoint for the mobile interface component. It masks direct access to the API Gateway and keeps backend services hidden from mobile users, controlling and redirecting traffic from the mobile client to the API Gateway.
+
+#### `web-proxy-waf`
+- **Technology:** nginx
+- **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
 
 ---
 
@@ -97,8 +105,10 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `runpath-routes` | Node.js (Express) | Route management (creation, tracking, finalization). | Communicates with `runpath-distance` via API Gateway and publishes messages to RabbitMQ. |
 | `runpath-distance` | Python (FastAPI) | Calculation of distances and geographical metrics. | Communicates with `runpath-routes` through the API Gateway. |
 | `runpath-notifications` | Java (Spring Boot) | Sending email notifications and reminders. | Consumes messages from RabbitMQ and sends emails to users. |
-| `runpath-broker` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
-| `API Gateway` | Express Gateway | Unified entry point; manages authentication and routes requests. | Connects clients (web and mobile) with all backend microservices. |
+| `runpath-notifications-queue` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
+| `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
+| `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
+| `web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
 
 ### Connector Description
 
@@ -129,9 +139,18 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Communication:** Client → Server, Synchronous Request/Response
 
 2. **AMQP Connector with Messaging Broker**
-   - **Components:** runpath-routes (Node.js) → runpath-broker (RabbitMQ)
+   - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (publish)
+
+---
+
+#### Notifications Service Connectors
+
+1. **AMQP Connector with Messaging Broker**
+   - **Components:** runpath-notifications (SpringBoot) → runpath-notifications-queue (RabbitMQ)
+   - **Protocol:** AMQP
+   - **Communication:** Unidirectional, Asynchronous Communication (consume)
 
 ---
 
@@ -143,13 +162,19 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Communication:** Client → Server, Synchronous Request/Response
    - **Description:** Allows the web interface to interact with the system's microservices through the gateway.
 
-2. **HTTP Connector with API Gateway (Mobile)**
-   - **Components:** runpath-mobile (Kotlin) ↔ API Gateway (Express Gateway)
+2. **HTTP Connector with Reverse Proxy and Waf**
+   - **Components:** runpath-frontend (Next.js) ↔ web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
-   - **Description:** Allows the mobile application to access authentication, routes, and notifications services.
+   - **Description:** Enables communication with the web-proxy-waf component, acting as an intermediary between web frontend and web client.
 
-3. **Local invocation connector to Relational Database**
+3. **HTTP Connector with Reverse Proxy (Mobile)**
+   - **Components:** runpath-mobile (Kotlin) ↔ mobile-reverse-proxy (Nginx)
+   - **Protocol:** HTTP
+   - **Communication:** Client → Server, Synchronous Request/Response
+   - **Description:** Allows the mobile application to communicate with the reverse proxy, intermediary between mobile frontend and api gateway.
+
+4. **Local invocation connector to Relational Database**
     - **Components:** runpath-mobile-frontend (Kotlin + Jetpack Compose) ↔ local-mobile-db (SQLite with Room)
     - **Protocol:** Local invocation (ORM / SQLite)
     - **Communication:** Local, synchronous
@@ -181,6 +206,30 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 ---
 
+#### Security componentes connectors
+
+1. **HTTP Connector with web frontend**
+   - **Components:** web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional, Synchronous Request/Response
+
+2. **HTTP Connector with web client**
+   - **Components:** web-proxy-waf (Nginx) ↔ web client
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional, Synchronous Request/Response
+
+3. **HTTP Connector with mobile frontend**
+   - **Components:** mobile-reverse-proxy (Nginx) ↔ runpath-mobile-frontend (Kotlin + Jetpack Compose)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional, Synchronous Request/Response
+
+4. **HTTP Connector with api gateway**
+   - **Components:** mobile-reverse-proxy (Nginx) ↔ API Gateway (Express Gateway)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional, Synchronous Request/Response
+
+---
+
 #### Messaging Broker Connectors
 
 1. **AMQP Connector with Notifications Service**
@@ -188,12 +237,17 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (consume)
 
+2. **AMQP Connector with Routes Service**
+   - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
+   - **Protocol:** AMQP
+   - **Communication:** Unidirectional, Asynchronous Communication (publish)
+
 #### Client Connectors
 
 ##### Web Client Connectors
 
 1. **HTTP Connector with the SSR Presentation Component**
-   - **Components:** Web Browser ↔ runpath-frontend-ssr (Next.js)
+   - **Components:** Web Browser ↔ web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client→Server, Synchronous Request/Response
 
@@ -223,15 +277,38 @@ The broker acts as an intermediary that decouples producers and consumers.
 
 #### API Gateway Pattern
 
-The system also applies the API Gateway pattern using Express Gateway.
+The system applies the API Gateway pattern using Express Gateway.
 This component serves as a single entry point for all external clients (web and mobile), handling authentication, routing, and request orchestration across multiple microservices.
 The pattern simplifies client interactions by centralizing access and focuses on orchestrating and redirecting the overall system flow.
+
+#### Secure Channel Pattern
+
+The RunPath System applies the Secure Channel Pattern.
+This is evidenced by the connector provided for the web frontend, ensuring that all messages are exchanged through the HTTPS protocol, which encrypts and validates all requests and responses.
+The pattern protects user credentials and sensitive information from potential attackers eavesdropping on the communication channel.
+
+#### Reverse Proxy Pattern
+
+he RunPath System applies the Reverse Proxy Pattern.
+In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
+The pattern protects the system from attempts to scan or attack internal services.
+
+#### Network Segmentation Pattern
+
+The RunPath System applies the Network Segmentation Pattern.
+Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
+The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+
+#### WAF Pattern
+The RunPath System applies the Web Application Firewall (WAF) Pattern.
+The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
+The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
 
 ## Deployment Structure
 
 ### Deployment view
 
-<p align="center"> <img src="./imgs/deployment_view.png" width="750"> </p>
+<p align="center"> <img src="./imgs/deploy_view_prototype3.svg" width="750"> </p>
 
 ### Description of Architectural Elements and Relations
 
@@ -279,10 +356,22 @@ The pattern simplifies client interactions by centralizing access and focuses on
    - **runpath_frontend**  
      *Deployed Component:* `runpath-web-frontend-ssr`  
      *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+   
+   - **mobile_nginx**  
+     *Deployed Component:* `mobile-reverse-proxy`  
+     *Description:* Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
+   
+   - **reverse-proxy**  
+     *Deployed Component:* `web-proxy-waf`  
+     *Description:* Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
 
    - **loki, promtail, grafana**  
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
+   
+   - **ngin-tls-gateway**  
+     *Deployed Component:* TLS stack  
+     *Description:* Provides the TLS certificates for the HTTPS connector.
 
 3. **Firebase Cloud Services**
    - Provides external cloud services:
@@ -290,6 +379,14 @@ The pattern simplifies client interactions by centralizing access and focuses on
      - `user-db`: NoSQL persistence for user profiles and credentials.
    - Communicates with the authentication-service via REST and SDK connectors.
    - Ensures secure and scalable user management outside the main server environment.
+
+#### Network Schema
+
+1. **db_net:** Private network dedicated to data management. Contains data components and services that exchange and manage information.
+2. **backend_net:** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
+3. **orchestration_net:** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
+4. **frontend_net:** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
+6. **public_net:** Public network that contains the reverse proxies, allowing public access only to these components.
 
 ## Layered Structure
 
@@ -494,59 +591,115 @@ Manages message composition and delivery:
 
 ### Scenario #1 - Unauthorized Interception and Network Link Compromise
 
-* **Source:** Any person or entity that wants to access/modify sensible (or not) data of the system.
-* **Stimulus:** Attempt to intercept, read ("acquire") and/or alter ("modify") the data packets being exchanged (Man-in-the-Middle).
-* **Artifact:** The communication channel.
+* **Source:** Any malicious actor attempting to intercept or alter communications between the web client and the system.
+* **Stimulus:** Attempts to perform a network sniffing or Man-in-the-Middle (MitM) while a user exchanges information with the web frontend.
+* **Artifact:** Communication channel between the web client and the runpath-web-frontend component.
 * **Enviroment:** Normal operation.
-* **Response:** The system, using the HTTPS (TLS) protocol, encrypts all data in transit. It also authenticates the server (proving it's the right one) and applies integrity checks (like HMAC) to the data.
+* **Response:** The system enforces encrypted communication using the HTTPS (TLS) protocol at the web frontend level. The TLS layer guarantees confidentiality, integrity, and authentication of all transmitted data.
 * **Response measure:**
     * **Confidentiality:** The attacker is unable to read the plain-text content of the data (it remains encrypted).
     * **Integrity:** Any modification to the data by the attacker is detected by the client or server (due to the integrity check failing), and the tampered data is rejected.
 
+<p align="center">
+<img src="./imgs/scenario1_linkcompromise.svg">
+</p>
+
 ---
 
-### Scenario #2 - 
+### Scenario #2 - Unauthorized Access to Private Components
 
-* **Source:** Any external malicious entity (attacker or automated scanner) from the internet.
-* **Stimulus:** Attempts to access the private components of the system.
+* **Source:** Any external malicious actor or automated scanner operating from the public internet.
+* **Stimulus:** Attempts to directly reach backend or orchestration services by bypassing the public interfaces of the system.
 * **Artifact:** The Private/Critical Components.
 * **Enviroment:** Normal operation with high volume of traffic requests.
-* **Response:** The Reverse Proxy acts as a layer of indirection, hiding the IP and server headers of the backend components and only forwarding explicitly authorized, non-malicious requests based on routing and load-balancing rules.
+* **Response:** Reverse proxies mediate all incoming HTTP requests directed to the system, exposing only approved endpoints and to forward requests exclusively to their mapped services.
 * **Response measure:**
     * **Access Control:** All unauthorized attempts to access or bypass the proxy to reach a private component are blocked.
-    * **Non-Repudiation (Server Anonymity):** The attacker cannot determine the private IP address, software details, or internal architecture of the backend system.
+    * **Non-Repudiation (Server Anonymity):** Attackers cannot infer private IP addresses or service configurations behind the proxy, limiting reconnaissance opportunities.
+
+<p align="center">
+<img src="./imgs/scenario2_unauthorizedaccess.svg">
+</p>
 
 ---
 
 ### Scenario #3 - Public Exposure of Critical Components
 
 * **Source:** An internal or external attacker who has already successfully gained initial access/a foothold on one part of the network.
-* **Stimulus:** Attempts lateral movement—sending IP packets to communicate with resources (e.g., a database server) located in the separate, private subnet.
+* **Stimulus:** The attacker attempts lateral movement to reach internal assets, such as databases or sensitive backend services.
 * **Artifact:** The Internal Network Segments (specifically, the target segment)
 * **Enviroment:** Post-compromise of a low-value asset in a public segment.
-* **Response:** The network is structurally configured using distinct IP subnets and VLANs to achieve logical separation. The network routing policy is designed to prevent the flow of unsolicited or unauthorized traffic packets from the public subnet directly to the private subnet, thus isolating the sensitive resources.
+* **Response:** The deployment enforces network segmentation through distinct subnets and routing domains. Only explicitly defined connections are permitted between subnets, preventing unsolicited or cross-segment traffic.
 * **Response measure:** 
 It is important to consider that we cannot ensure the following elements, however, the response helps with the mitigation of them.
-
-   * **Containment:** The attacker's attempt to send packets to the sensitive private segment is rejected by the routing/switching infrastructure at the subnet boundary, isolating the incident to the initially compromised zone.
+   * **Containment:** The attacker's attempt to send packets to the sensitive private segment is rejected by the routing/switching infrastructure at the subnet boundary.
    * **Confidentiality/Integrity:** The high-value assets in the private subnet remain inaccessible and uncompromised, preventing widespread damage following a localized breach.
+
+<p align="center">
+<img src="./imgs/scenario3_publicexposure.svg">
+</p>
 
 ---
 
-### Scenario #4 - 
+### Scenario #4 - Service Degradation or Denial Due to Excessive Traffic
 
 * **Source:** An attacker or automated botnet attempting to degrade or halt application service availability.
-* **Stimulus:** Submits an overwhelming volume of requests targeting a single, resource-intensive endpoint (e.g., complex search, login form, or API call)
-* **Artifact:** The entire system. However, it also can be seen as the component whose Availability is targeted.
+* **Stimulus:** Submits an overwhelming volume of requests to the web frontend to exhaust its processing capacity.
+* **Artifact:** The runpath-web-frontend component and its public endpoint.
 * **Enviroment:** Normal operation, handling legitimate HTTP/S requests alongside a surge of malicious traffic.
 * **Response:** The Web Application Firewall (WAF) analyzes the traffic flow for behavioral anomalies, such as request rates exceeding established thresholds from a single source or IP range. It then applies rate limiting and/or connection throttling to the abusive traffic pattern and drops the offending requests.
 * **Response measure:**
     * **Availability (Service Denial Prevention):** The WAF sustains the service's availability for legitimate users by shedding the malicious load.
     * **Throughput/Latency:** The rate of processing for legitimate requests is maintained above a critical threshold, and latency remains within acceptable bounds, despite the attack.
 
+<p align="center">
+<img src="./imgs/scenario4_servicedegradation.svg">
+</p>
+
 ### Architectural tactics applied
 
+#### Encrypt Data
+
+**Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
+**Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
+**Associated Pattern:** Secure Channel Pattern.
+
+#### Limit Access
+
+**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
+**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
+**Associated Pattern:** Reverse Proxy Pattern.
+
+#### Detect Service Denial
+
+**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Associated Pattern:** Web Application Firewall (WAF) Pattern.
+
 ### Architectural patterns applied
+
+#### Secure Channel Pattern
+
+The RunPath System applies the Secure Channel Pattern.
+This is evidenced by the connector provided for the web frontend, ensuring that all messages are exchanged through the HTTPS protocol, which encrypts and validates all requests and responses.
+The pattern protects user credentials and sensitive information from potential attackers eavesdropping on the communication channel.
+
+#### Reverse Proxy Pattern
+
+he RunPath System applies the Reverse Proxy Pattern.
+In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
+The pattern protects the system from attempts to scan or attack internal services.
+
+#### Network Segmentation Pattern
+
+The RunPath System applies the Network Segmentation Pattern.
+Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
+The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+
+#### Web Application Firewall (WAF) Pattern
+The RunPath System applies the Web Application Firewall (WAF) Pattern.
+The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
+The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
 
 ## Performance and Scalability
 
