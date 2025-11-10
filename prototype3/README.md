@@ -34,7 +34,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 ### C&C View
 
 <p align="center">
-<img src="./imgs/cc_view_prototype3.svg">
+<img src="./imgs/cc_view_prototype3.png">
 </p>
 
 ### Components Description
@@ -308,7 +308,7 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ### Deployment view
 
-<p align="center"> <img src="./imgs/deploy_view_prototype3.svg" width="750"> </p>
+<p align="center"> <img src="./imgs/deploy_view_prototype3.png" width="750"> </p>
 
 ### Description of Architectural Elements and Relations
 
@@ -542,7 +542,7 @@ The **Run Path System** is composed of three main modules operating in a modular
 
 ### Decomposition View
 
-![Decomposition-View](./imgs/decomposition-view.drawio.png)
+![Decomposition-View](./imgs/decomposition_view_prototype3.png)
 
 ### Modules and functionalities
 
@@ -601,7 +601,7 @@ Manages message composition and delivery:
     * **Integrity:** Any modification to the data by the attacker is detected by the client or server (due to the integrity check failing), and the tampered data is rejected.
 
 <p align="center">
-<img src="./imgs/scenario1_linkcompromise.svg">
+<img src="./imgs/scenario1_linkcompromise.png">
 </p>
 
 ---
@@ -618,7 +618,7 @@ Manages message composition and delivery:
     * **Non-Repudiation (Server Anonymity):** Attackers cannot infer private IP addresses or service configurations behind the proxy, limiting reconnaissance opportunities.
 
 <p align="center">
-<img src="./imgs/scenario2_unauthorizedaccess.svg">
+<img src="./imgs/scenario2_unauthorizedaccess.png">
 </p>
 
 ---
@@ -636,7 +636,7 @@ It is important to consider that we cannot ensure the following elements, howeve
    * **Confidentiality/Integrity:** The high-value assets in the private subnet remain inaccessible and uncompromised, preventing widespread damage following a localized breach.
 
 <p align="center">
-<img src="./imgs/scenario3_publicexposure.svg">
+<img src="./imgs/scenario3_publicexposure.png">
 </p>
 
 ---
@@ -653,24 +653,24 @@ It is important to consider that we cannot ensure the following elements, howeve
     * **Throughput/Latency:** The rate of processing for legitimate requests is maintained above a critical threshold, and latency remains within acceptable bounds, despite the attack.
 
 <p align="center">
-<img src="./imgs/scenario4_servicedegradation.svg">
+<img src="./imgs/scenario4_servicedegradation.png">
 </p>
 
 ### Architectural tactics applied
 
-#### Encrypt Data
+#### **1. Encrypt Data**
 
 **Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
 **Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
 **Associated Pattern:** Secure Channel Pattern.
 
-#### Limit Access
+#### **2. Limit Access**
 
 **Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
 **Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
 **Associated Pattern:** Reverse Proxy Pattern.
 
-#### Detect Service Denial
+#### **3. Detect Service Denial**
 
 **Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
 **Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
@@ -678,25 +678,25 @@ It is important to consider that we cannot ensure the following elements, howeve
 
 ### Architectural patterns applied
 
-#### Secure Channel Pattern
+#### **1. Secure Channel Pattern**
 
 The RunPath System applies the Secure Channel Pattern.
 This is evidenced by the connector provided for the web frontend, ensuring that all messages are exchanged through the HTTPS protocol, which encrypts and validates all requests and responses.
 The pattern protects user credentials and sensitive information from potential attackers eavesdropping on the communication channel.
 
-#### Reverse Proxy Pattern
+#### **2. Reverse Proxy Pattern**
 
 he RunPath System applies the Reverse Proxy Pattern.
 In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
 The pattern protects the system from attempts to scan or attack internal services.
 
-#### Network Segmentation Pattern
+#### **3. Network Segmentation Pattern**
 
 The RunPath System applies the Network Segmentation Pattern.
 Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
 The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
 
-#### Web Application Firewall (WAF) Pattern
+#### **4. Web Application Firewall (WAF) Pattern**
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
 The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
 The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
