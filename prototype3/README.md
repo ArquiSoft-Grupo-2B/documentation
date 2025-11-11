@@ -388,68 +388,72 @@ The pattern protects the web frontend component from potential Denial of Service
 4. **frontend_net:** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
 6. **public_net:** Public network that contains the reverse proxies, allowing public access only to these components.
 
+
 ## Layered Structure
 
 ### Tier View
 
-<img src="./imgs/logic layers.svg"/>
+<img src="./imgs/tier_view_prototype3.drawio (1).png"/>
 
 #### Elements description
 
-##### `Tier 1 — Presentation`
+##### `Tier 0 — Presentation`
 
-- Frontend Web (NextJS SSR): web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
+-   Frontend Web (NextJS SSR): web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
+-   Frontend Mobile (Kotlin): native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
 
-- Frontend Mobile (Kotlin): native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
+##### `**Tier 1 — Edge/Security**`
+
+-   **`web-proxy-waf (Nginx)`: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).**
+-   **`mobile-reverse-proxy (Nginx)`: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.**
 
 ##### `Tier 2 — Orchestration`
 
-- API Gateway (Express-gateway): unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
+-   API Gateway (Express-gateway): unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
 
 ##### `Tier 3 — Logic`
 
-- Authentication Service (Python - FastAPI): handles login, token issuance/validation, and user management.
-
-- Routes Service (JS - NestJS): manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
-
-- Distances Service (OSRM-Backend - C++ service): specialized service for distance/route calculations, using geospatial data.
-
-- Notification Service (Java - Spring): responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
+-   Authentication Service (Python - FastAPI): handles login, token issuance/validation, and user management.
+-   Routes Service (JS - NestJS): manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
+-   **`Distances Service (Python - FastAPI)`: Service responsible for calculating distances between geographical points and analyzing route-related metrics.**
+-   Notification Service (Java - Spring): responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
 
 ##### `Tier 4 — Async Communication`
 
-- Messenger Queue (RabbitMQ): message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
+-   Messenger Queue (RabbitMQ): message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
 
 ##### `Tier 5 — Data (central persistence / storage)`
 
-- geography-db (PostgreSQL): relational DB with geospatial capabilities (PostGIS implied) for map/route data.
-
-- user-db (NoSQL): flexible-schema store for users/profiles/sessions with high availability.
-
-- logs-db (Loki): logging store for observability/telemetry.
+-   geography-db (PostgreSQL): relational DB with geospatial capabilities (PostGIS implied) for map/route data.
+-   user-db (NoSQL): flexible-schema store for users/profiles/sessions, **associated with the Firebase Authentication service.**
+-   logs-db (Loki): logging store for observability/telemetry.
 
 ##### `Tier 6 — Mobile data (local mobile storage)`
 
-- mobile-db (SQLite): on-device local DB for caching and offline operation/synchronization.
+-   mobile-db (SQLite): on-device local DB for caching and offline operation/synchronization.
 
 #### Relationships description
 
-- `Presentation → Orchestration:` frontends call the API Gateway as the first access layer.
-
-- `Orchestration → Logic:` the gateway routes requests to the appropriate microservices.
-
-- `Logic → Data:` microservices access their data stores (geography-db, user-db, logs-db).
-
-- `Logic → Async (RabbitMQ):` services publish to and/or consume from queues for asynchronous work (e.g., Routes Service publishes “route finished” events; Notification Service consumes and sends notifications).
-
-- `Presentation (Mobile) → Mobile data (SQLite):` the mobile app uses its local DB to store data for offline access and sync.
-
+-   **`Web Flow:` `Tier 1 (web-proxy-waf)` receives requests from the web client and serves/protects `Tier 0 (Frontend Web)`. `Tier 0 (Frontend Web)` in turn consumes data from `Tier 2 (API Gateway)`.**
+-   **`Mobile Flow:` `Tier 0 (Frontend Mobile)` communicates with `Tier 1 (mobile-reverse-proxy)`. This proxy securely forwards requests to `Tier 2 (API Gateway)`.**
+-   **`Backend Flow:` `Tier 2 (Orchestration)` routes requests to the appropriate microservices in `Tier 3 (Logic)`.**
+-   **`Data Flow:` `Tier 3 (Logic)` services access their data stores in `Tier 5 (Data)`.**
+-   **`Async Flow:` `Tier 3 (Logic)` services publish and/or consume messages from `Tier 4 (Async Communication)` for asynchronous work.**
+-   **`Mobile Data Flow:` `Tier 0 (Frontend Mobile)` uses its local DB in `Tier 6 (Mobile data)`.**
 
 #### Description of architectural patterns used
 
 ##### `N-tier Architecture`
 
-Clear separation into Presentation, Orchestration, Logic, Data and an asynchronous communication layer. Helps responsibility separation, independent deployment and scaling.
+Clear separation into **Edge/Security, Presentation, Orchestration, Logic, Data** and an asynchronous communication layer. Helps responsibility separation, independent deployment and scaling.
+
+##### **`Reverse Proxy Pattern`**
+
+**Implemented in `Tier 1` to securely mediate communication between clients and the system, redirecting requests and masking the internal infrastructure.**
+
+##### **`WAF Pattern`**
+
+**Applied at the `web-proxy-waf` (Tier 1) to establish a boundary on incoming requests and protect the web frontend from common attacks like DoS.**
 
 ##### `Local Cache + Sync`
 
@@ -459,9 +463,11 @@ Mobile local DB (SQLite) suggests an offline/sync pattern: the app functions wit
 
 logs-db (Loki) indicates centralized log collection for monitoring, tracing and diagnostics.
 
+---
+
 ### Layered View
 
-<img src="./imgs/layer view.drawio.svg"/>
+<img src="./imgs/layers_view_prototype3 (1).drawio.png"/>
 
 #### Elements description
 
@@ -469,71 +475,92 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 ##### `Frontend Web (Next.js SSR)`
 
-*Revisar las capas como estan definidas actualmente*
+-   **Layer 1: View Layer (Presentation):** Renders the final UI (HTML/CSS) presented to the user, composed of various components.
+-   **Layer 2: Component (UI Logic):** Contains the reusable React components, managing their individual state and handling user interactions (event handlers).
+-   **Layer 3: Business Logic:** Encapsulates client-side business rules and application state (e.g., user session, global state) that spans multiple components.
+-   **Layer 4: Data Access:** Manages all communication with the API Gateway, handling data fetching (fetching/sending data) and state synchronization.
 
 ##### `Frontend Mobile (Kotlin)`
 
-*Revisar las capas como estan definidas actualmente*
+-   **Layer 1: View Layer (Presentation):** The UI screens (e.g., Jetpack Compose Composables or Android Views) responsible for displaying data and capturing user input.
+-   **Layer 2: Presentation logic (View Model):** The ViewModel layer. It holds UI-related state, prepares data for the View, and handles presentation logic, surviving configuration changes.
+-   **Layer 3: Domain Layer:** Contains the core business logic, use cases (interactors), and domain models, completely independent of the UI.
+-   **Layer 4: Data Access:** The repository layer. It abstracts the data sources, managing whether to fetch data from the local `mobile-db` (SQLite) or the remote API.
+
+#### **`Edge/Security Layers`**
+
+##### **`web-proxy-waf (Nginx)`**
+
+-   **`Layer 1: Reverse Proxy:` Forwards HTTP/HTTPS requests to the `Frontend Web` component.**
+-   **`Layer 2: WAF Ruleset:` Applies firewall rules (e.g., rate limiting) to filter malicious traffic.**
+-   **`Layer 3: Caching Layer:` Caches static assets to improve performance.**
+
+##### **`mobile-reverse-proxy (Nginx)`**
+
+-   **`Layer 1: Reverse Proxy:` Forwards HTTP/HTTPS requests to the `API Gateway`.**
+-   **`Layer 2: Request Routing:` Directs traffic based on mobile API routes.**
 
 #### Orchestration Layers
 
 ##### `API Gateway (Express-Gateway)`
-- **Layer 1: Presentation Layer:** Acts as the **public entry point**; defines external API endpoints, handles initial connections, and formats client responses.
-- **Layer 2: Proxy Layer:** Performs **dynamic routing** of requests to the correct backend services and handles tasks like load balancing and basic request transformation.
-- **Layer 3: Middleware Layer:** Enforces **cross-cutting concerns** such as authentication, authorization checks, API rate limiting, and centralized logging.
-- **Layer 4: Service Integration Layer:** Manages **communication** with the backend microservices, handles protocol translation, service composition (orchestration), and error centralization.
+
+-   **Layer 1: Presentation Layer:** Acts as the **public entry point**; defines external API endpoints, handles initial connections, and formats client responses.
+-   **Layer 2: Proxy Layer:** Performs **dynamic routing** of requests to the correct backend services and handles tasks like load balancing and basic request transformation.
+-   **Layer 3: Middleware Layer:** Enforces **cross-cutting concerns** such as authentication, authorization checks, API rate limiting, and centralized logging.
+-   **Layer 4: Service Integration Layer:** Manages **communication** with the backend microservices, handles protocol translation, service composition (orchestration), and error centralization.
 
 #### Backend Layers
 
 ##### `Authentication Service (Python - FastAPI)`
 
-- **Interface Layer:** Exposes REST APIs for user login, token validation, and management.  
-- **Adapters Layer:** Converts external requests/responses into domain-friendly formats; interfaces with databases and external systems.  
-- **Application Layer:** Coordinates user-related use cases such as login, registration, and token refresh.  
-- **Domain Layer:** Contains the business logic for authentication and identity validation.  
-- **Infrastructure Layer:** Manages repositories, persistence mechanisms, and security utilities (e.g., JWT).
+-   **Interface Layer:** Exposes REST APIs for user login, token validation, and management.
+-   **Adapters Layer:** Converts external requests/responses into domain-friendly formats; interfaces with databases and external systems.
+-   **Application Layer:** Coordinates user-related use cases such as login, registration, and token refresh.
+-   **Domain Layer:** Contains the business logic for authentication and identity validation.
+-   **Infrastructure Layer:** Manages repositories, persistence mechanisms, and security utilities (e.g., JWT).
 
 ##### `Routes Service (NestJS)`
 
-- **Presentation Layer:** Provides REST endpoints and maps incoming requests to application use cases.  
-- **Application Layer:** Implements the logic for route creation, querying, and filtering.  
-- **Domain Layer:** Defines entities (Route, Segment, etc.) and business rules for route computation.  
-- **Infrastructure Layer:** Handles data persistence and integration with RabbitMQ for asynchronous messaging.
+-   **Presentation Layer:** Provides REST endpoints and maps incoming requests to application use cases.
+-   **Application Layer:** Implements the logic for route creation, querying, and filtering.
+-   **Domain Layer:** Defines entities (Route, Segment, etc.) and business rules for route computation.
+-   **Infrastructure Layer:** Handles data persistence and integration with RabbitMQ for asynchronous messaging.
 
-##### `Distances Service (C++)`
+##### **`Distances Service (Python - FastAPI)`**
 
-- **API Layer:** Exposes routing and distance calculation endpoints to other services.  
-- **Engine Layer:** Executes optimized routing algorithms (Dijkstra, A*, CH).  
-- **Data Processing Layer:** Preprocesses and transforms map data for performance.  
-- **Storage Layer:** Manages access to routing graph data and precomputed results.
+-   **`Interface Layer:` Exposes REST/GraphQL endpoints for distance calculations and metrics.**
+-   **`Adapters Layer:` Converts geospatial inputs (e.g., coordinates) into domain formats.**
+-   **`Application Layer:` Orchestrates use cases, such as "Calculate Distance" or "Analyze Route Metric".**
+-   **`Domain Layer:` Contains the pure business logic and algorithms for geospatial calculations.**
+-   **`Infrastructure Layer:` Manages data access (e.g., to `geography-db`) or external map APIs.**
 
 ##### `Notification Service (Java - Spring)`
 
-- **Presentation Layer:** Defines endpoints and queue consumers for receiving notification events.  
-- **Application Layer:** Coordinates notification delivery workflows.  
-- **Messaging Layer:** Manages communication with RabbitMQ, retries, and message routing.  
-- **Business Layer:** Defines templates, prioritization logic, and delivery policies.
+-   **Presentation Layer:** Defines endpoints and queue consumers for receiving notification events.
+-   **Application Layer:** Coordinates notification delivery workflows.
+-   **Messaging Layer:** Manages communication with RabbitMQ, retries, and message routing.
+-   **Business Layer:** Defines templates, prioritization logic, and delivery policies.
 
 #### Description of architectural patterns used
 
 #### `Layered Architecture`
 
-All services follow a layered design principle separating **presentation**, **application**, **domain**, and **infrastructure** concerns.  
+All services follow a layered design principle separating **presentation**, **application**, **domain**, and **infrastructure** concerns.
 This promotes modularity, independent testing, and clear boundaries between logic and technology.
 
 #### `Hexagonal Architecture (Ports and Adapters)`
 
-Used by the **Authentication Service**, this pattern isolates core business logic from external dependencies.  
+Used by the **`Authentication Service`** and **`Distances Service`**, this pattern isolates core business logic from external dependencies.
 It defines “ports” (interfaces) for core logic and “adapters” for connecting to frameworks, APIs, or databases.
 
 #### `Clean Architecture`
 
-Adopted by the **Routes Service**, ensuring a strict dependency rule — outer layers depend on inner layers, but not vice versa.  
+Adopted by the **Routes Service**, ensuring a strict dependency rule — outer layers depend on inner layers, but not vice versa.
 It facilitates testability and maintainability in complex domain logic.
 
 #### `MVVM / Layered Presentation`
 
-Used by **Mobile (Kotlin)** to enforce separation between UI, presentation logic, domain, and data access layers.  
+Used by **Mobile (Kotlin)** to enforce separation between UI, presentation logic, domain, and data access layers.
 This allows scalable and reactive UIs while keeping state management predictable.
 
 ## Decomposition Structure
