@@ -393,7 +393,7 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ### Tier View
 
-<img src="./imgs/tier_view_prototype3.drawio (1).png"/>
+<img src="./imgs/tier_view_prototype3 (1).drawio.png"/>
 
 #### Elements description
 
