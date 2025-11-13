@@ -85,13 +85,23 @@ Available both on the web and as a mobile application, RunPath provides a simple
 - **Technology:** Express Gateway
 - **Description:** Internal gateway that receives requests from the mobile reverse proxy and the web frontend. It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
 
+---
+
 #### `mobile-reverse-proxy`
 - **Technology:** Nginx
 - **Description:** Responsible for exposing a public endpoint for the mobile interface component. It masks direct access to the API Gateway and keeps backend services hidden from mobile users, controlling and redirecting traffic from the mobile client to the API Gateway.
 
+---
+
 #### `web-proxy-waf`
 - **Technology:** nginx
 - **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
+
+---
+
+#### `load-balance-auth`
+- **Technology**: nginx
+- **Description**: Acts as a load balancer for the authentication services that are replicated to ensure traffic distribution among the instances.
 
 ---
 
@@ -109,6 +119,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
 | `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
 | `web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balance-auth` | Nginx | Distribute the authentication requests between the authentication-containers | Redirects the requests from API Gateway to the authentication service |
 
 ### Connector Description
 
@@ -184,11 +195,11 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 #### API Gateway Connectors
 
-1. **HTTP/GraphQL Connector with Authentication**
-   - **Components:** API Gateway (Express Gateway) ↔ runpath-login (FastAPI)
-   - **Protocol:** HTTP/GraphQL
-   - **Communication:** Client → Server, Synchronous Request/Response
-
+1. **HTTP/GraphQL Connector with Load Balancer**
+   - **Components:** API Gateway (Express Gateway) ↔ load-balance-auth (Nginx)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional
+  
 2. **HTTP/REST Connector with Routes Service**
    - **Components:** API Gateway (Express Gateway) ↔ runpath-routes (Node.js)
    - **Protocol:** HTTP/REST
@@ -241,6 +252,17 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (publish)
+  
+---
+
+#### Performance components connectors
+
+1. **HTTP/GraphQL Connector with Authentication**
+   - **Components:** load-balance-auth (Nginx) ↔ runpath-login (FastAPI)
+   - **Protocol:** HTTP/GraphQL
+   - **Communication:** Bidirectional
+
+---
 
 #### Client Connectors
 
@@ -289,15 +311,14 @@ The pattern protects user credentials and sensitive information from potential a
 
 #### Reverse Proxy Pattern
 
-he RunPath System applies the Reverse Proxy Pattern.
+The RunPath System applies the Reverse Proxy Pattern.
 In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
 The pattern protects the system from attempts to scan or attack internal services.
 
-#### Network Segmentation Pattern
+#### Load Balancer Pattern
 
-The RunPath System applies the Network Segmentation Pattern.
-Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
-The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+The RunPath System applies the Load Balancer Pattern.
+In the system, there are two load balancers for the following services: Authentication and frontend-ssr. They are in charge of handles messages from various clients in order to distributed them among the computations available for each service.
 
 #### WAF Pattern
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
