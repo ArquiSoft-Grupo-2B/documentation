@@ -820,14 +820,14 @@ The pattern protects the web frontend component from potential Denial of Service
 Using a packet capture tool (Wireshark), network traffic between the client and the runpath-web-frontend component was intercepted. The captured packets show that all transmitted information is encrypted, confirming that data in transit is properly protected.
 
 <p align="center">
-<img src="./imgs/test_data_interception.png">
+<img src="./imgs/test_data_interception.jpeg">
 </p>
 
 #### 2. Ping Requests Between Containers:
 Connectivity tests were performed among the deployed containers, recording both successful and failed attempts. The results demonstrate that network segmentation effectively isolates the data, services, and orchestration layers, allowing access only between authorized components according to the private network configuration.
 
 <p align="center">
-<img src="./imgs/test_pings.png">
+<img src="./imgs/test_pings.jpeg">
 </p>
 
 #### 3. DoS Attack Simulation:
