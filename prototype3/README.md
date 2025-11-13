@@ -844,70 +844,6 @@ An automated script executed 200 concurrent requests (in batches of 50) directed
 
 ## Performance and Scalability
 
-### Scenario 1 – Authentication Service Performance
-
-* **Source:** 100 legitimate users attempting to log into the system.
-* **Stimulus:** 1100 login requests are sent within one second.
-* **Artifact:** The runpath-login component.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system processes all authentication requests successfully.
-* **Response measure:** All authentication requests are processed in response time less than 20559 miliseconds.
-
-<p align="center">
-<img src="./imgs/scenario1_authenticationperformance.png">
-</p>
-
-**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
-
----
-
-### Scenario 2 - Frontend Performance
-
-* **Source:** 100 legitimate users attempting to access the system.
-* **Stimulus:** 1300 requests are sent within one second.
-* **Artifact:** The runpath-web-frontend component.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system processes all incoming access requests to the frontend.
-* **Response measure:** All frontend requests are processed in response time less than 23 miliseconds.
-
-<p align="center">
-<img src="./imgs/scenario2_frontendperformance.png">
-</p>
-
-**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
-
----
-
-### Architectural tactics applied
-
-#### 1. Maintain Multiple Copies of Computations
-
-**Description:** This tactic aims to improve system performance through horizontal scaling, creating identical copies of the same node to distribute processing load and reduce average response time.
-**Application:** It is applied in the deployment of containers, where multiple instances of the runpath-web-frontend and runpath-login components are executed. This allows requests to be distributed among replicas of each service, optimizing overall performance.  
-**Associated Pattern:** Load Balancer Pattern.
-
----
-
-### Architectural patterns applied
-
-#### 1. Load Balancer Pattern
-
-The RunPath System applies the Load Balancer Pattern.
-In the system, the component that serves as both reverse proxy and WAF for runpath-web-frontend also integrates load balancing functionality, determining which instance should receive incoming requests based on its current capacity.
-Similarly, a dedicated load balancer component is implemented for runpath-login, receiving requests from the API Gateway and distributing them across available instances according to their workload.
-This pattern ensures efficient horizontal scalability, enhancing response time and performance of the associated components.
-
----
-
-### Relationship Between Applied Patterns and Scenarios
-
-| **Scenario** | **Pattern** | **Explanation** |
-|---------------|-------------|-----------------|
-| Scenario 1 – Frontend Performance | Load Balancer Pattern | The load balancer distributes incoming user requests among multiple instances of the *runpath-web-frontend* component, reducing response time and avoiding overload on a single node. |
-| Scenario 2 – Authentication Service Performance | Load Balancer Pattern | The load balancer distributes authentication requests from the API Gateway across several *runpath-login* instances, improving throughput and ensuring consistent performance under high demand. |
-
----
-
 ### Performance testing analysis and results
 
 A set of performance and stress tests were conducted using the **Jmeter** tool
@@ -988,6 +924,70 @@ While a single user request yields the following average metrics:
 - AUTH	470,5 ms
 - FULL	99,3 ms
 
+
+### Scenario 1 – Authentication Service Performance
+
+* **Source:** 100 legitimate users attempting to log into the system.
+* **Stimulus:** 1100 login requests are sent within one second.
+* **Artifact:** The runpath-login component.
+* **Enviroment:** Normal operation under high request traffic.
+* **Response:** The system processes all authentication requests successfully.
+* **Response measure:** All authentication requests are processed in response time less than 20559 miliseconds.
+
+<p align="center">
+<img src="./imgs/scenario1_authenticationperformance.png">
+</p>
+
+**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
+
+---
+
+### Scenario 2 - Frontend Performance
+
+* **Source:** 100 legitimate users attempting to access the system.
+* **Stimulus:** 1300 requests are sent within one second.
+* **Artifact:** The runpath-web-frontend component.
+* **Enviroment:** Normal operation under high request traffic.
+* **Response:** The system processes all incoming access requests to the frontend.
+* **Response measure:** All frontend requests are processed in response time less than 23 miliseconds.
+
+<p align="center">
+<img src="./imgs/scenario2_frontendperformance.png">
+</p>
+
+**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
+
+---
+
+### Architectural tactics applied
+
+#### 1. Maintain Multiple Copies of Computations
+
+**Description:** This tactic aims to improve system performance through horizontal scaling, creating identical copies of the same node to distribute processing load and reduce average response time.
+**Application:** It is applied in the deployment of containers, where multiple instances of the runpath-web-frontend and runpath-login components are executed. This allows requests to be distributed among replicas of each service, optimizing overall performance.  
+**Associated Pattern:** Load Balancer Pattern.
+
+---
+
+### Architectural patterns applied
+
+#### 1. Load Balancer Pattern
+
+The RunPath System applies the Load Balancer Pattern.
+In the system, the component that serves as both reverse proxy and WAF for runpath-web-frontend also integrates load balancing functionality, determining which instance should receive incoming requests based on its current capacity.
+Similarly, a dedicated load balancer component is implemented for runpath-login, receiving requests from the API Gateway and distributing them across available instances according to their workload.
+This pattern ensures efficient horizontal scalability, enhancing response time and performance of the associated components.
+
+---
+
+### Relationship Between Applied Patterns and Scenarios
+
+| **Scenario** | **Pattern** | **Explanation** |
+|---------------|-------------|-----------------|
+| Scenario 1 – Frontend Performance | Load Balancer Pattern | The load balancer distributes incoming user requests among multiple instances of the *runpath-web-frontend* component, reducing response time and avoiding overload on a single node. |
+| Scenario 2 – Authentication Service Performance | Load Balancer Pattern | The load balancer distributes authentication requests from the API Gateway across several *runpath-login* instances, improving throughput and ensuring consistent performance under high demand. |
+
+---
 
 
 ## Deployment instructions
