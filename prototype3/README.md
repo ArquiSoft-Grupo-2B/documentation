@@ -959,9 +959,37 @@ A test plan was designed to simulate a normal user flow under varying load. The 
 
 ![performance curve 1](./imgs/performance/Performance%20Curve%201.png)
 
+The system operates under optimal response times until reaching approximately 120 concurrent users in one second. Beyond this point, response times begin to increase significantly. Therefore the knee in the performance curve is around 120 users/second. Around this workload, the system yields the following average metrics, considering the destionation of requests:
+
+
+- FRONT	38,33333333 ms
+- AUTH	27876,75 ms
+- FULL	10159 ms
+
+While a single user request yields the following average metrics:
+
+- FRONT	12 ms
+- AUTH	480,75 ms
+- FULL	186 ms
+
 **Hardware arrangement 2:**
 
 ![performance curve 2](./imgs/performance/Performance%20Curve%202.png)
+
+The system operates under optimal response times until reaching approximately 100 concurrent users in one second. Beyond this point, response times begin to increase significantly. Therefore the knee in the performance curve is around 100 users/second. Around this workload, the system yields the following average metrics, considering the destionation of requests:
+
+- FRONT	23,30769231 ms
+- AUTH	20559,5 ms
+- FULL	5364,05 ms
+
+While a single user request yields the following average metrics:
+
+- FRONT	4,692307692 ms
+- AUTH	470,5 ms
+- FULL	99,3 ms
+
+
+
 ## Deployment instructions
 
 This section describes the detailed steps to configure and run the RunPath
