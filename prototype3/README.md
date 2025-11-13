@@ -406,8 +406,8 @@ The pattern protects the web frontend component from potential Denial of Service
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
 
-   - **load-balance-auth**
-     *Deployed Component:* `load-balance-auth`
+   - **load-balance-auth**  
+     *Deployed Component:* `load-balance-auth`  
      *Description:* Distributed traffic from authentication requests between the computations available for the service.
    
    - **ngin-tls-gateway**  
