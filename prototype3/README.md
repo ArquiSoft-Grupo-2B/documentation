@@ -955,6 +955,13 @@ The client connected to the server via a low traffic LAN network.
 
 A test plan was designed to simulate a normal user flow under varying load. The results are as follows:
 
+**Hardware arrangement 1:**
+
+![performance curve 1](./imgs/performance/Performance%20Curve%201.png)
+
+**Hardware arrangement 2:**
+
+![performance curve 2](./imgs/performance/Performance%20Curve%202.png)
 ## Deployment instructions
 
 This section describes the detailed steps to configure and run the RunPath
