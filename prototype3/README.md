@@ -730,7 +730,7 @@ Manages message composition and delivery:
 
 ### Scenario 4 – Service Degradation or Denial Due to Excessive Traffic
 
-* **Source:** Attacker or automated botnet attempting to degrade the system’s availability.
+* **Source:** Attacker or automated bot attempting to degrade the system’s availability.
 * **Stimulus:** Sending an excessive volume of requests to the frontend in order to saturate its processing capacity.
 * **Artifact:** The runpath-web-frontend component and its public entry point.
 * **Enviroment:** Normal operation under high request traffic.
@@ -748,19 +748,25 @@ Manages message composition and delivery:
 #### 1. Encrypt Data
 
 **Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
-**Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
+
+**Application:** It is applied on the public channel   between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.  
+
 **Associated Pattern:** Secure Channel Pattern.
 
 #### 2. Limit Access
 
-**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
-**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
+**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.  
+
+**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.  
+
 **Associated Pattern:** Reverse Proxy Pattern.
 
 #### 3. Detect Service Denial
 
-**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.  
+
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.  
+
 **Associated Pattern:** Web Application Firewall (WAF) Pattern.
 
 ---
@@ -803,35 +809,67 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ---
 
-## Performance and Scalability
+## Verification Tests
 
-### Scenario 1 - Frontend Performance
-
-* **Source:** 120 legitimate users attempting to access the system.
-* **Stimulus:** 120 access requests are sent within one second.
-* **Artifact:** The runpath-web-frontend component.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system processes all incoming access requests to the frontend.
-* **Response measure:** All frontend access requests are processed in less than 8 milliseconds.
+#### 1. Data Interception:
+Using a packet capture tool (Wireshark), network traffic between the client and the runpath-web-frontend component was intercepted. The captured packets show that all transmitted information is encrypted, confirming that data in transit is properly protected.
 
 <p align="center">
-<img src="./imgs/scenario1_frontendperformance.png">
+<img src="./imgs/test_data_interception.png">
+</p>
+
+#### 2. Ping Requests Between Containers:
+Connectivity tests were performed among the deployed containers, recording both successful and failed attempts. The results demonstrate that network segmentation effectively isolates the data, services, and orchestration layers, allowing access only between authorized components according to the private network configuration.
+
+<p align="center">
+<img src="./imgs/test_pings.png">
+</p>
+
+#### 3. DoS Attack Simulation:
+An automated script executed 200 concurrent requests (in batches of 50) directed to the runpath-web-frontend component, simulating a Denial of Service (DoS) attack. The test results show that the system blocks access from the originating source and displays a warning message, confirming that the configured WAF defense mechanism was successfully triggered.
+
+<p align="center">
+<img src="./imgs/test_dos_simulation.png">
+</p>
+<p align="center">
+<img src="./imgs/test_dos_simulation2.png">
 </p>
 
 ---
 
-### Scenario 2 – Authentication Service Performance
+## Performance and Scalability
 
-* **Source:** 120 legitimate users attempting to log into the system.
-* **Stimulus:** 120 login requests are sent within one second.
+### Scenario 1 – Authentication Service Performance
+
+* **Source:** 100 legitimate users attempting to log into the system.
+* **Stimulus:** 1100 login requests are sent within one second.
 * **Artifact:** runpath-login component.
 * **Enviroment:** Normal operation under high request traffic.
 * **Response:** The system processes all authentication requests successfully.
-* **Response measure:** All authentication requests are processed in less than 8 milliseconds.
+* **Response measure:** All authentication requests are processed in response time less to 20559 miliseconds.
 
 <p align="center">
-<img src="./imgs/scenario2_authenticationperformance.png">
+<img src="./imgs/scenario1_authenticationperformance.png">
 </p>
+
+**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
+
+---
+
+### Scenario 2 - Frontend Performance
+
+* **Source:** 100 legitimate users attempting to access the system.
+* **Stimulus:** 1300 requests are sent within one second.
+* **Artifact:** The runpath-web-frontend component.
+* **Enviroment:** Normal operation under high request traffic.
+* **Response:** The system processes all incoming access requests to the frontend.
+* **Response measure:** All frontend requests are processed in response time of 23 miliseconds.
+
+<p align="center">
+<img src="./imgs/scenario2_frontendperformance.png">
+</p>
+
+**Note:** The time mentioned in the response measure refers to the system’s current processing time for those requests; therefore, the scenario aims to reduce that response time.
 
 ---
 
@@ -840,7 +878,7 @@ The pattern protects the web frontend component from potential Denial of Service
 #### 1. Maintain Multiple Copies of Computations
 
 **Description:** This tactic aims to improve system performance through horizontal scaling, creating identical copies of the same node to distribute processing load and reduce average response time.
-**Application:** It is applied in the deployment of containers, where multiple instances of the runpath-web-frontend and runpath-login components are executed. This allows requests to be distributed among replicas of each service, optimizing overall performance.
+**Application:** It is applied in the deployment of containers, where multiple instances of the runpath-web-frontend and runpath-login components are executed. This allows requests to be distributed among replicas of each service, optimizing overall performance.  
 **Associated Pattern:** Load Balancer Pattern.
 
 ---
