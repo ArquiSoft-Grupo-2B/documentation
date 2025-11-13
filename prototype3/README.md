@@ -463,6 +463,13 @@ The pattern protects the web frontend component from potential Denial of Service
 
 The RunPath System applies the Network Segmentation Pattern. Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations. The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
 
+#### Service Replication Pattern
+
+The RunPath System applies the Service Replication Pattern.  
+This pattern involves deploying multiple identical instances of key services or components, allowing requests to be processed in parallel and reducing the load on individual nodes.  
+In the system, both *runpath-web-frontend* and *runpath-login* are replicated into several instances, enabling the load balancers to distribute requests dynamically.  
+This replication increases the system’s throughput, fault tolerance, and overall performance under high-demand conditions.
+
 ## Layered Structure
 
 ### Tier View
