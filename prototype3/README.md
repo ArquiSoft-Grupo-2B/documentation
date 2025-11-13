@@ -85,13 +85,23 @@ Available both on the web and as a mobile application, RunPath provides a simple
 - **Technology:** Express Gateway
 - **Description:** Internal gateway that receives requests from the mobile reverse proxy and the web frontend. It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
 
+---
+
 #### `mobile-reverse-proxy`
 - **Technology:** Nginx
 - **Description:** Responsible for exposing a public endpoint for the mobile interface component. It masks direct access to the API Gateway and keeps backend services hidden from mobile users, controlling and redirecting traffic from the mobile client to the API Gateway.
 
-#### `web-proxy-waf`
+---
+
+#### `load-balancer-web-proxy-waf`
 - **Technology:** nginx
 - **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
+
+---
+
+#### `load-balance-auth`
+- **Technology**: nginx
+- **Description**: Acts as a load balancer for the authentication services that are replicated to ensure traffic distribution among the instances.
 
 ---
 
@@ -108,7 +118,8 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `runpath-notifications-queue` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
 | `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
 | `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
-| `web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balancer-web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balance-auth` | Nginx | Distribute the authentication requests between the authentication-containers | Redirects the requests from API Gateway to the authentication service |
 
 ### Connector Description
 
@@ -163,10 +174,10 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Description:** Allows the web interface to interact with the system's microservices through the gateway.
 
 2. **HTTP Connector with Reverse Proxy and Waf**
-   - **Components:** runpath-frontend (Next.js) ↔ web-proxy-waf (Nginx)
+   - **Components:** runpath-frontend (Next.js) ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
-   - **Description:** Enables communication with the web-proxy-waf component, acting as an intermediary between web frontend and web client.
+   - **Description:** Enables communication with the load-balancer-web-proxy-waf component, acting as an intermediary between web frontend and web client.
 
 3. **HTTP Connector with Reverse Proxy (Mobile)**
    - **Components:** runpath-mobile (Kotlin) ↔ mobile-reverse-proxy (Nginx)
@@ -184,11 +195,11 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 #### API Gateway Connectors
 
-1. **HTTP/GraphQL Connector with Authentication**
-   - **Components:** API Gateway (Express Gateway) ↔ runpath-login (FastAPI)
-   - **Protocol:** HTTP/GraphQL
-   - **Communication:** Client → Server, Synchronous Request/Response
-
+1. **HTTP/GraphQL Connector with Load Balancer**
+   - **Components:** API Gateway (Express Gateway) ↔ load-balance-auth (Nginx)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional
+  
 2. **HTTP/REST Connector with Routes Service**
    - **Components:** API Gateway (Express Gateway) ↔ runpath-routes (Node.js)
    - **Protocol:** HTTP/REST
@@ -209,12 +220,12 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Security componentes connectors
 
 1. **HTTP Connector with web frontend**
-   - **Components:** web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 2. **HTTP Connector with web client**
-   - **Components:** web-proxy-waf (Nginx) ↔ web client
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ web client
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
@@ -241,13 +252,24 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (publish)
+  
+---
+
+#### Performance components connectors
+
+1. **HTTP/GraphQL Connector with Authentication**
+   - **Components:** load-balance-auth (Nginx) ↔ runpath-login (FastAPI)
+   - **Protocol:** HTTP/GraphQL
+   - **Communication:** Bidirectional
+
+---
 
 #### Client Connectors
 
 ##### Web Client Connectors
 
 1. **HTTP Connector with the SSR Presentation Component**
-   - **Components:** Web Browser ↔ web-proxy-waf (Nginx)
+   - **Components:** Web Browser ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client→Server, Synchronous Request/Response
 
@@ -289,15 +311,14 @@ The pattern protects user credentials and sensitive information from potential a
 
 #### Reverse Proxy Pattern
 
-he RunPath System applies the Reverse Proxy Pattern.
+The RunPath System applies the Reverse Proxy Pattern.
 In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
 The pattern protects the system from attempts to scan or attack internal services.
 
-#### Network Segmentation Pattern
+#### Load Balancer Pattern
 
-The RunPath System applies the Network Segmentation Pattern.
-Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
-The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+The RunPath System applies the Load Balancer Pattern.
+In the system, there are two load balancers for the following services: Authentication and frontend-ssr. They are in charge of handles messages from various clients in order to distributed them among the computations available for each service.
 
 #### WAF Pattern
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
@@ -320,8 +341,8 @@ The pattern protects the web frontend component from potential Denial of Service
    - Communicates securely with the API Gateway over HTTPS to access backend services.
    - Supports offline operations and periodic synchronization with central services.
 
-2. **Server (routes_shared_network)**
-   - Virtual host containing multiple Docker containers representing backend microservices and supporting components.
+2. **Server**
+   - Host containing multiple Docker containers representing backend microservices and supporting components.
    - Containers communicate internally through a shared virtual network for isolation and controlled inter-service access.
 
    **Contained Elements:**
@@ -329,7 +350,15 @@ The pattern protects the web frontend component from potential Denial of Service
      *Deployed Component:* `runpath-distance`  
      *Description:* Computes distances and geospatial metrics using OSRM, communicating with the Routes Service via the API Gateway.
 
-   - **authentication-service**  
+   - **authentication-service** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-1** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-2** 
      *Deployed Component:* `runpath-login`  
      *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
 
@@ -356,18 +385,30 @@ The pattern protects the web frontend component from potential Denial of Service
    - **runpath_frontend**  
      *Deployed Component:* `runpath-web-frontend-ssr`  
      *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-1**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-2**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
    
    - **mobile_nginx**  
      *Deployed Component:* `mobile-reverse-proxy`  
      *Description:* Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
    
    - **reverse-proxy**  
-     *Deployed Component:* `web-proxy-waf`  
+     *Deployed Component:* `load-balancer-web-proxy-waf`  
      *Description:* Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
 
    - **loki, promtail, grafana**  
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
+
+   - **load-balance-auth**
+     *Deployed Component:* `load-balance-auth`
+     *Description:* Distributed traffic from authentication requests between the computations available for the service.
    
    - **ngin-tls-gateway**  
      *Deployed Component:* TLS stack  
@@ -382,11 +423,11 @@ The pattern protects the web frontend component from potential Denial of Service
 
 #### Network Schema
 
-1. **db_net:** Private network dedicated to data management. Contains data components and services that exchange and manage information.
-2. **backend_net:** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
-3. **orchestration_net:** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
-4. **frontend_net:** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
-6. **public_net:** Public network that contains the reverse proxies, allowing public access only to these components.
+1. **db_net (172.30.0.0/16):** Private network dedicated to data management. Contains data components and services that exchange and manage information.
+2. **backend_net (172.28.0.0/16):** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
+3. **orchestration_net (172.29.0.0/16):** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
+4. **frontend_net (172.27.0.0/16):** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
+6. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
 
 
 ## Layered Structure
@@ -503,7 +544,7 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 #### **`Tier 0: Security Layer`**
 
-##### **`web-proxy-waf (Nginx)`**
+##### **`load-balancer-web-proxy-waf (Nginx)`**
 
 -   **Layer 1: Reverse Proxy:** Forwards HTTP/HTTPS requests to the `Frontend Web` component.
 -   **Layer 2: WAF Ruleset:** Applies firewall rules (e.g., rate limiting) to filter malicious traffic.
@@ -727,7 +768,7 @@ It is important to consider that we cannot ensure the following elements, howeve
 #### **3. Detect Service Denial**
 
 **Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
 **Associated Pattern:** Web Application Firewall (WAF) Pattern.
 
 ### Architectural patterns applied
