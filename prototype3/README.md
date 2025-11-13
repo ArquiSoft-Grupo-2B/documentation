@@ -6,6 +6,7 @@
 ---
 
 # Team
+
 - Samuel Josué Vargas Castro
 - Daniel Felipe Soracipa
 - Juan Esteban Cárdenas Huertas
@@ -40,66 +41,77 @@ Available both on the web and as a mobile application, RunPath provides a simple
 ### Components Description
 
 #### `runpath-frontend-ssr`
+
 - **Technology:** React + Next.js (JavaScript)
 - **Description:** RunPath system's web interface that allows users to register, log in, view available routes, and check their progress. It communicates with the API Gateway to consume backend services.
 
 ---
 
 #### `runpath-mobile`
+
 - **Technology:** Kotlin (Jetpack Compose)
 - **Description:** RunPath's native mobile application that replicates and complements the web frontend's functionality. It provides an optimized experience for Android devices and communicates with the API Gateway for all operations.
 
 ---
 
 #### `runpath-login`
+
 - **Technology:** Python (FastAPI)
 - **Description:** Service responsible for authentication and user management of the RunPath system. It exposes its functionalities through the API Gateway.
 
 ---
 
 #### `runpath-routes`
+
 - **Technology:** Node.js (Express)
 - **Description:** Microservice responsible for **route management**. It handles route creation and management. It also allows users to track and finalize routes.
 
 ---
 
 #### `runpath-distance`
+
 - **Technology:** Python (FastAPI)
 - **Description:** Service responsible for calculating distances between geographical points and analyzing route-related metrics. It communicates with other services through the API Gateway.
 
 ---
 
 #### `runpath-notifications`
+
 - **Technology:** Java (Spring Boot)
 - **Description:** Microservice responsible for sending email notifications and reminders to users. It processes messages coming from the RabbitMQ broker (emitted by `runpath-routes`) and generates additional scheduled notifications.
 
 ---
 
 #### `runpath-notifications-queue`
+
 - **Technology:** RabbitMQ
 - **Description:** Messaging middleware that acts as an asynchronous intermediary between `runpath-routes` and `runpath-notifications`. It receives route completion events and delivers them for subsequent processing and user notification.
 
 ---
 
 #### `API Gateway`
+
 - **Technology:** Express Gateway
 - **Description:** Internal gateway that receives requests from the mobile reverse proxy and the web frontend. It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
 
 ---
 
 #### `mobile-reverse-proxy`
+
 - **Technology:** Nginx
 - **Description:** Responsible for exposing a public endpoint for the mobile interface component. It masks direct access to the API Gateway and keeps backend services hidden from mobile users, controlling and redirecting traffic from the mobile client to the API Gateway.
 
 ---
 
 #### `load-balancer-web-proxy-waf`
+
 - **Technology:** nginx
 - **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
 
 ---
 
 #### `load-balance-auth`
+
 - **Technology**: nginx
 - **Description**: Acts as a load balancer for the authentication services that are replicated to ensure traffic distribution among the instances.
 
@@ -107,30 +119,32 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 #### Summary Table — Components Overview
 
-| **Component** | **Technology** | **Primary Responsibility** | **Key Interactions** |
-|:---:|:---:|:---:|:---:|
-| `runpath-frontend-ssr` | React + Next.js (JavaScript) | Web system interface; allows users to log in, register, and view routes. | Communicates with the API Gateway via HTTP/HTTPS. |
-| `runpath-mobile` | Kotlin (Jetpack Compose) | Native mobile application replicating web frontend functionalities and enabling route tracking and finalization. | Communicates with the API Gateway via HTTP/HTTPS. |
-| `runpath-login` | Python (FastAPI) | Authentication and user management. | Connected to the API Gateway via GraphQL. |
-| `runpath-routes` | Node.js (Express) | Route management (creation, tracking, finalization). | Communicates with `runpath-distance` via API Gateway and publishes messages to RabbitMQ. |
-| `runpath-distance` | Python (FastAPI) | Calculation of distances and geographical metrics. | Communicates with `runpath-routes` through the API Gateway. |
-| `runpath-notifications` | Java (Spring Boot) | Sending email notifications and reminders. | Consumes messages from RabbitMQ and sends emails to users. |
-| `runpath-notifications-queue` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
-| `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
-| `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
-| `load-balancer-web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
-| `load-balance-auth` | Nginx | Distribute the authentication requests between the authentication-containers | Redirects the requests from API Gateway to the authentication service |
+|         **Component**         |        **Technology**        |                                            **Primary Responsibility**                                            |                                   **Key Interactions**                                   |
+| :---------------------------: | :--------------------------: | :--------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+|    `runpath-frontend-ssr`     | React + Next.js (JavaScript) |                     Web system interface; allows users to log in, register, and view routes.                     |                    Communicates with the API Gateway via HTTP/HTTPS.                     |
+|       `runpath-mobile`        |   Kotlin (Jetpack Compose)   | Native mobile application replicating web frontend functionalities and enabling route tracking and finalization. |                    Communicates with the API Gateway via HTTP/HTTPS.                     |
+|        `runpath-login`        |       Python (FastAPI)       |                                       Authentication and user management.                                        |                        Connected to the API Gateway via GraphQL.                         |
+|       `runpath-routes`        |      Node.js (Express)       |                               Route management (creation, tracking, finalization).                               | Communicates with `runpath-distance` via API Gateway and publishes messages to RabbitMQ. |
+|      `runpath-distance`       |       Python (FastAPI)       |                                Calculation of distances and geographical metrics.                                |               Communicates with `runpath-routes` through the API Gateway.                |
+|    `runpath-notifications`    |      Java (Spring Boot)      |                                    Sending email notifications and reminders.                                    |                Consumes messages from RabbitMQ and sends emails to users.                |
+| `runpath-notifications-queue` |           RabbitMQ           |                           Asynchronous message queue between routes and notifications.                           |  Receives events from `runpath-routes` and distributes them to `runpath-notifications`.  |
+|         `API Gateway`         |       Express Gateway        |                         Backend entry point; manages authentication and routes requests.                         |      Connects mobile reverse proxy and web frontend with all backend microservices.      |
+|    `mobile-reverse-proxy`     |            Nginx             |                   Public entry point for mobile users. Masks the API Gateway to mobile users.                    |              Redirects the request from mobile frontend to the API Gateway.              |
+| `load-balancer-web-proxy-waf` |            Nginx             |              Public entry point for web users. Masks the web frontend and limits incoming requests.              | Redirects the requests from web brower to web frontend and stops potential DoS attacks.  |
+|      `load-balance-auth`      |            Nginx             |                   Distribute the authentication requests between the authentication-containers                   |          Redirects the requests from API Gateway to the authentication service           |
 
 ### Connector Description
 
 #### Authentication Service Connectors
 
 1. **Connector to Firebase Authentication via SDK**
+
    - **Components:** runpath-login (FastAPI) ↔ firebase-authentication (Firebase)
    - **Protocol:** Firebase SDK
    - **Communication:** Client → Server, Synchronous Request/Response
 
 2. **REST Connector with Firebase Authentication (Firebase Auth REST API)**
+
    - **Components:** runpath-login (FastAPI) ↔ firebase-authentication (Firebase)
    - **Protocol:** HTTP/REST
    - **Communication:** Client → Server, Synchronous Request/Response
@@ -145,6 +159,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Routes Service Connectors
 
 1. **TCP Connector to Relational Database**
+
    - **Components:** runpath-routes (Node.js) ↔ geography-db (PostgreSQL + PostGIS)
    - **Protocol:** TypeORM over TCP/PostgreSQL
    - **Communication:** Client → Server, Synchronous Request/Response
@@ -168,48 +183,54 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Presentation Service Connectors (Frontend and Mobile)
 
 1. **HTTP Connector with API Gateway**
+
    - **Components:** runpath-frontend (Next.js) ↔ API Gateway (Express Gateway)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
    - **Description:** Allows the web interface to interact with the system's microservices through the gateway.
 
 2. **HTTP Connector with Reverse Proxy and Waf**
+
    - **Components:** runpath-frontend (Next.js) ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
    - **Description:** Enables communication with the load-balancer-web-proxy-waf component, acting as an intermediary between web frontend and web client.
 
 3. **HTTP Connector with Reverse Proxy (Mobile)**
+
    - **Components:** runpath-mobile (Kotlin) ↔ mobile-reverse-proxy (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
    - **Description:** Allows the mobile application to communicate with the reverse proxy, intermediary between mobile frontend and api gateway.
 
 4. **Local invocation connector to Relational Database**
-    - **Components:** runpath-mobile-frontend (Kotlin + Jetpack Compose) ↔ local-mobile-db (SQLite with Room)
-    - **Protocol:** Local invocation (ORM / SQLite)
-    - **Communication:** Local, synchronous
-    - **Description:** Enables direct data persistence and retrieval within the mobile device. The `runpath-mobile-frontend` component accesses the local SQLite database through the Room ORM, without involving any network communication.
+   - **Components:** runpath-mobile-frontend (Kotlin + Jetpack Compose) ↔ local-mobile-db (SQLite with Room)
+   - **Protocol:** Local invocation (ORM / SQLite)
+   - **Communication:** Local, synchronous
+   - **Description:** Enables direct data persistence and retrieval within the mobile device. The `runpath-mobile-frontend` component accesses the local SQLite database through the Room ORM, without involving any network communication.
 
 ---
 
 #### API Gateway Connectors
 
 1. **HTTP/GraphQL Connector with Load Balancer**
+
    - **Components:** API Gateway (Express Gateway) ↔ load-balance-auth (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional
-  
+
 2. **HTTP/REST Connector with Routes Service**
+
    - **Components:** API Gateway (Express Gateway) ↔ runpath-routes (Node.js)
    - **Protocol:** HTTP/REST
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 3. **HTTP/REST Connector with Distance Service**
+
    - **Components:** API Gateway (Express Gateway) ↔ runpath-distance (FastAPI)
    - **Protocol:** HTTP/REST
    - **Communication:** Client → Server, Synchronous Request/Response
-  
+
 4. **HTTP Connector with Notification Service**
    - **Components:** API Gateway (Express Gateway) ↔ runpath-notifications (SpringBoot)
    - **Protocol:** HTTP
@@ -220,16 +241,19 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Security componentes connectors
 
 1. **HTTP Connector with web frontend**
+
    - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 2. **HTTP Connector with web client**
+
    - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ web client
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 3. **HTTP Connector with mobile frontend**
+
    - **Components:** mobile-reverse-proxy (Nginx) ↔ runpath-mobile-frontend (Kotlin + Jetpack Compose)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
@@ -244,6 +268,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Messaging Broker Connectors
 
 1. **AMQP Connector with Notifications Service**
+
    - **Components:** runpath-broker (RabbitMQ) → runpath-notifications (Spring Boot)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (consume)
@@ -252,7 +277,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (publish)
-  
+
 ---
 
 #### Performance components connectors
@@ -321,6 +346,7 @@ The RunPath System applies the Load Balancer Pattern.
 In the system, there are two load balancers for the following services: Authentication and frontend-ssr. They are in charge of handles messages from various clients in order to distributed them among the computations available for each service.
 
 #### WAF Pattern
+
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
 The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
 The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
@@ -336,83 +362,86 @@ The pattern protects the web frontend component from potential Denial of Service
 #### Execution Environments
 
 1. **Android Smartphone**
+
    - Hosts the `runpath-mobile-frontend` application, developed in Kotlin with Jetpack Compose.
    - Includes a local SQLite database (`local-mobile-db` via Room ORM) for caching routes and user progress offline.
    - Communicates securely with the API Gateway over HTTPS to access backend services.
    - Supports offline operations and periodic synchronization with central services.
 
 2. **Server**
+
    - Host containing multiple Docker containers representing backend microservices and supporting components.
    - Containers communicate internally through a shared virtual network for isolation and controlled inter-service access.
 
    **Contained Elements:**
+
    - **osrm-colombia**  
-     *Deployed Component:* `runpath-distance`  
-     *Description:* Computes distances and geospatial metrics using OSRM, communicating with the Routes Service via the API Gateway.
+     _Deployed Component:_ `runpath-distance`  
+     _Description:_ Computes distances and geospatial metrics using OSRM, communicating with the Routes Service via the API Gateway.
 
-   - **authentication-service** 
-     *Deployed Component:* `runpath-login`  
-     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+   - **authentication-service**
+     _Deployed Component:_ `runpath-login`  
+     _Description:_ Handles user authentication and session management; integrates with Firebase for identity services.
 
-   - **authentication-service-1** 
-     *Deployed Component:* `runpath-login`  
-     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+   - **authentication-service-1**
+     _Deployed Component:_ `runpath-login`  
+     _Description:_ Handles user authentication and session management; integrates with Firebase for identity services.
 
-   - **authentication-service-2** 
-     *Deployed Component:* `runpath-login`  
-     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+   - **authentication-service-2**
+     _Deployed Component:_ `runpath-login`  
+     _Description:_ Handles user authentication and session management; integrates with Firebase for identity services.
 
    - **routes-postgres**  
-     *Deployed Component:* `geography-db`  
-     *Description:* Stores route and geospatial data using PostgreSQL with PostGIS extensions.
+     _Deployed Component:_ `geography-db`  
+     _Description:_ Stores route and geospatial data using PostgreSQL with PostGIS extensions.
 
    - **routes_app**  
-     *Deployed Component:* `runpath-routes`  
-     *Description:* Manages route creation, retrieval, updates, and publishing events to RabbitMQ.
+     _Deployed Component:_ `runpath-routes`  
+     _Description:_ Manages route creation, retrieval, updates, and publishing events to RabbitMQ.
 
    - **rabbit**  
-     *Deployed Component:* `runpath-notifications-queue`  
-     *Description:* Message broker enabling asynchronous, decoupled communication between Routes and Notifications services.
+     _Deployed Component:_ `runpath-notifications-queue`  
+     _Description:_ Message broker enabling asynchronous, decoupled communication between Routes and Notifications services.
 
    - **notification-service**  
-     *Deployed Component:* `runpath-notifications`  
-     *Description:* Processes messages from RabbitMQ and sends user notifications via email.
+     _Deployed Component:_ `runpath-notifications`  
+     _Description:_ Processes messages from RabbitMQ and sends user notifications via email.
 
    - **api-gateway**  
-     *Deployed Component:* `API Gateway`  
-     *Description:* Single entry point for frontends; handles routing, authentication, and request orchestration to backend services.
+     _Deployed Component:_ `API Gateway`  
+     _Description:_ Single entry point for frontends; handles routing, authentication, and request orchestration to backend services.
 
    - **runpath_frontend**  
-     *Deployed Component:* `runpath-web-frontend-ssr`  
-     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+     _Deployed Component:_ `runpath-web-frontend-ssr`  
+     _Description:_ Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
 
    - **frontend-ssr-1**  
-     *Deployed Component:* `runpath-web-frontend-ssr`  
-     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+     _Deployed Component:_ `runpath-web-frontend-ssr`  
+     _Description:_ Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
 
    - **frontend-ssr-2**  
-     *Deployed Component:* `runpath-web-frontend-ssr`  
-     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
-   
+     _Deployed Component:_ `runpath-web-frontend-ssr`  
+     _Description:_ Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
    - **mobile_nginx**  
-     *Deployed Component:* `mobile-reverse-proxy`  
-     *Description:* Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
-   
+     _Deployed Component:_ `mobile-reverse-proxy`  
+     _Description:_ Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
+
    - **reverse-proxy**  
-     *Deployed Component:* `load-balancer-web-proxy-waf`  
-     *Description:* Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
+     _Deployed Component:_ `load-balancer-web-proxy-waf`  
+     _Description:_ Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
 
    - **loki, promtail, grafana**  
-     *Deployed Component:* Observability stack  
-     *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
+     _Deployed Component:_ Observability stack  
+     _Description:_ Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
 
    - **load-balance-auth**  
-     *Deployed Component:* `load-balance-auth`  
-     *Description:* Distributed traffic from authentication requests between the computations available for the service.
-   
+     _Deployed Component:_ `load-balance-auth`  
+     _Description:_ Distributed traffic from authentication requests between the computations available for the service.
+
    - **ngin-tls-gateway**  
-     *Deployed Component:* TLS stack  
-     *Description:* Provides the TLS certificates for the HTTPS connector.
+     _Deployed Component:_ TLS stack  
+     _Description:_ Provides the TLS certificates for the HTTPS connector.
 
 3. **Firebase Cloud Services**
    - Provides external cloud services:
@@ -427,7 +456,7 @@ The pattern protects the web frontend component from potential Denial of Service
 2. **backend_net (172.28.0.0/16):** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
 3. **orchestration_net (172.29.0.0/16):** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
 4. **frontend_net (172.27.0.0/16):** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
-6. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
+5. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
 
 ### Architectural Patterns
 
@@ -445,57 +474,57 @@ The RunPath System applies the Network Segmentation Pattern. Each system tier is
 
 ##### `Tier 0 — Security`
 
--   **`web-proxy-waf (Nginx)`**: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).
+- **`web-proxy-waf (Nginx)`**: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).
 
 ##### `Tier 1 — Presentation`
 
--   `Frontend Web (NextJS SSR)`: web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
--   `Frontend Mobile (Kotlin)`: native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
+- `Frontend Web (NextJS SSR)`: web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
+- `Frontend Mobile (Kotlin)`: native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
 
 ##### `Tier 2 — Edge`
 
--   **`mobile-reverse-proxy (Nginx)`**: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.
+- **`mobile-reverse-proxy (Nginx)`**: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.
 
 ##### `Tier 3 — Orchestration`
 
--   `API Gateway (Express-gateway)`: unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
+- `API Gateway (Express-gateway)`: unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
 
 ##### `**Tier 4 — Load Balancing**`
 
--   **`Load Balancer (Nginx)`: An internal Nginx component that acts as an intermediary to distribute incoming requests to the `Authentication Service`, enhancing its scalability and resilience.**
+- **`Load Balancer (Nginx)`: An internal Nginx component that acts as an intermediary to distribute incoming requests to the `Authentication Service`, enhancing its scalability and resilience.**
 
 ##### `**Tier 5 — Logic**`
 
--   **`Tier 5.1: Logic`**
-    -   `Authentication Service (Python - FastAPI)`: handles login, token issuance/validation, and user management.
--   **`Tier 5.2: Logic`**
-    -   `Routes Service (JS - NestJS)`: manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
-    -   `Distances Service (Python - FastAPI)`: Service responsible for calculating distances between geographical points and analyzing route-related metrics.
-    -   `Notification Service (Java - Spring)`: responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
+- **`Tier 5.1: Logic`**
+  - `Authentication Service (Python - FastAPI)`: handles login, token issuance/validation, and user management.
+- **`Tier 5.2: Logic`**
+  - `Routes Service (JS - NestJS)`: manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
+  - `Distances Service (Python - FastAPI)`: Service responsible for calculating distances between geographical points and analyzing route-related metrics.
+  - `Notification Service (Java - Spring)`: responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
 
 ##### `**Tier 6 — Async Communication**`
 
--   `Messenger Queue (RabbitMQ)`: message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
+- `Messenger Queue (RabbitMQ)`: message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
 
 ##### `**Tier 7 — Data (central persistence / storage)**`
 
--   `geography-db (PostgreSQL)`: relational DB with geospatial capabilities (PostGIS implied) for map/route data.
--   `user-db (NoSQL)`: flexible-schema store for users/profiles/sessions, associated with the Firebase Authentication service.
--   `logs-db (Loki)`: logging store for observability/telemetry.
+- `geography-db (PostgreSQL)`: relational DB with geospatial capabilities (PostGIS implied) for map/route data.
+- `user-db (NoSQL)`: flexible-schema store for users/profiles/sessions, associated with the Firebase Authentication service.
+- `logs-db (Loki)`: logging store for observability/telemetry.
 
 ##### `**Tier 8 — Mobile data (local mobile storage)**`
 
--   `mobile-db (SQLite)`: on-device local DB for caching and offline operation/synchronization.
+- `mobile-db (SQLite)`: on-device local DB for caching and offline operation/synchronization.
 
 #### Relationships description
 
--   **`Web Flow:` `Tier 0 (Security)` receives requests and serves/protects `Tier 1 (Frontend Web)`. `Tier 1 (Frontend Web)` in turn consumes data from `Tier 3 (Orchestration)`.**
--   **`Mobile Flow:` `Tier 1 (Frontend Mobile)` communicates with `Tier 2 (Edge)`. This proxy securely forwards requests to `Tier 3 (Orchestration)`.**
--   **`Backend Logic Flow:` `Tier 3 (Orchestration)` routes requests directly to the services in `Tier 5.2 (Logic)`.**
--   **`Authentication Flow:` For authentication, `Tier 3 (Orchestration)` sends requests to `Tier 4 (Load Balancer)`, which then distributes them to `Tier 5.1 (Logic)`.**
--   **`Data Flow:` Services in both `Tier 5.1` and `Tier 5.2` access their required data stores in `Tier 7 (Data)`.**
--   **`Async Flow:` `Tier 5.2 (Logic)` services publish and/or consume messages from `Tier 6 (Async Communication)`.**
--   **`Mobile Data Flow:` `Tier 1 (Frontend Mobile)` uses its local DB in `Tier 8 (Mobile data)`.**
+- **`Web Flow:` `Tier 0 (Security)` receives requests and serves/protects `Tier 1 (Frontend Web)`. `Tier 1 (Frontend Web)` in turn consumes data from `Tier 3 (Orchestration)`.**
+- **`Mobile Flow:` `Tier 1 (Frontend Mobile)` communicates with `Tier 2 (Edge)`. This proxy securely forwards requests to `Tier 3 (Orchestration)`.**
+- **`Backend Logic Flow:` `Tier 3 (Orchestration)` routes requests directly to the services in `Tier 5.2 (Logic)`.**
+- **`Authentication Flow:` For authentication, `Tier 3 (Orchestration)` sends requests to `Tier 4 (Load Balancer)`, which then distributes them to `Tier 5.1 (Logic)`.**
+- **`Data Flow:` Services in both `Tier 5.1` and `Tier 5.2` access their required data stores in `Tier 7 (Data)`.**
+- **`Async Flow:` `Tier 5.2 (Logic)` services publish and/or consume messages from `Tier 6 (Async Communication)`.**
+- **`Mobile Data Flow:` `Tier 1 (Frontend Mobile)` uses its local DB in `Tier 8 (Mobile data)`.**
 
 #### Description of architectural patterns used
 
@@ -535,46 +564,46 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 ##### `Frontend Web (Next.js SSR)`
 
--   **Layer 1: View Layer (Presentation):** Renders the final UI (HTML/CSS) presented to the user, composed of various components.
--   **Layer 2: Component (UI Logic):** Contains the reusable React components, managing their individual state and handling user interactions (event handlers).
--   **Layer 3: Business Logic:** Encapsulates client-side business rules and application state (e.g., user session, global state) that spans multiple components.
--   **Layer 4: Data Access:** Manages all communication with the API Gateway, handling data fetching (fetching/sending data) and state synchronization.
+- **Layer 1: View Layer (Presentation):** Renders the final UI (HTML/CSS) presented to the user, composed of various components.
+- **Layer 2: Component (UI Logic):** Contains the reusable React components, managing their individual state and handling user interactions (event handlers).
+- **Layer 3: Business Logic:** Encapsulates client-side business rules and application state (e.g., user session, global state) that spans multiple components.
+- **Layer 4: Data Access:** Manages all communication with the API Gateway, handling data fetching (fetching/sending data) and state synchronization.
 
 ##### `Frontend Mobile (Kotlin)`
 
--   **Layer 1: View Layer (Presentation):** The UI screens (e.g., Jetpack Compose Composables or Android Views) responsible for displaying data and capturing user input.
--   **Layer 2: Presentation logic (View Model):** The ViewModel layer. It holds UI-related state, prepares data for the View, and handles presentation logic, surviving configuration changes.
--   **Layer 3: Domain Layer:** Contains the core business logic, use cases (interactors), and domain models, completely independent of the UI.
--   **Layer 4: Data Access:** The repository layer. It abstracts the data sources, managing whether to fetch data from the local `mobile-db` (SQLite) or the remote API.
+- **Layer 1: View Layer (Presentation):** The UI screens (e.g., Jetpack Compose Composables or Android Views) responsible for displaying data and capturing user input.
+- **Layer 2: Presentation logic (View Model):** The ViewModel layer. It holds UI-related state, prepares data for the View, and handles presentation logic, surviving configuration changes.
+- **Layer 3: Domain Layer:** Contains the core business logic, use cases (interactors), and domain models, completely independent of the UI.
+- **Layer 4: Data Access:** The repository layer. It abstracts the data sources, managing whether to fetch data from the local `mobile-db` (SQLite) or the remote API.
 
 #### **`Tier 0: Security Layer`**
 
 ##### **`load-balancer-web-proxy-waf (Nginx)`**
 
--   **Layer 1: Reverse Proxy:** Forwards HTTP/HTTPS requests to the `Frontend Web` component.
--   **Layer 2: WAF Ruleset:** Applies firewall rules (e.g., rate limiting) to filter malicious traffic.
--   **Layer 3: Caching Layer:** Caches static assets to improve performance.
+- **Layer 1: Reverse Proxy:** Forwards HTTP/HTTPS requests to the `Frontend Web` component.
+- **Layer 2: WAF Ruleset:** Applies firewall rules (e.g., rate limiting) to filter malicious traffic.
+- **Layer 3: Caching Layer:** Caches static assets to improve performance.
 
 #### **`Tier 2: Edge Layer`**
 
 ##### **`mobile-reverse-proxy (Nginx)`**
 
--   **`Layer 1: Configuration Layer`**: Contains Nginx configuration files that define routing rules, security headers, and proxy settings for all incoming mobile traffic.
+- **`Layer 1: Configuration Layer`**: Contains Nginx configuration files that define routing rules, security headers, and proxy settings for all incoming mobile traffic.
 
 #### **`Tier 3: Orchestration Layer`**
 
 ##### `API Gateway (Express-Gateway)`
 
--   **Layer 1: Presentation Layer:** Acts as the **public entry point**; defines external API endpoints, handles initial connections, and formats client responses.
--   **Layer 2: Proxy Layer:** Performs **dynamic routing** of requests to the correct backend services and handles tasks like load balancing and basic request transformation.
--   **Layer 3: Middleware Layer:** Enforces **cross-cutting concerns** such as authentication, authorization checks, API rate limiting, and centralized logging.
--   **Layer 4: Service Integration Layer:** Manages **communication** with the backend microservices, handles protocol translation, service composition (orchestration), and error centralization.
+- **Layer 1: Presentation Layer:** Acts as the **public entry point**; defines external API endpoints, handles initial connections, and formats client responses.
+- **Layer 2: Proxy Layer:** Performs **dynamic routing** of requests to the correct backend services and handles tasks like load balancing and basic request transformation.
+- **Layer 3: Middleware Layer:** Enforces **cross-cutting concerns** such as authentication, authorization checks, API rate limiting, and centralized logging.
+- **Layer 4: Service Integration Layer:** Manages **communication** with the backend microservices, handles protocol translation, service composition (orchestration), and error centralization.
 
 #### **`Tier 4: Load Balancing Layer`**
 
 ##### **`Load Balancer (Nginx)`**
 
--   **`Layer 1: Configuration Layer`**: Defines the upstream server pool (the `Authentication Service` instances) and the load balancing strategy (e.g., round-robin, least connections) to be used.
+- **`Layer 1: Configuration Layer`**: Defines the upstream server pool (the `Authentication Service` instances) and the load balancing strategy (e.g., round-robin, least connections) to be used.
 
 #### **`Tier 5: Logic Layers`**
 
@@ -582,35 +611,76 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 ##### `Authentication Service (Python - FastAPI)`
 
--   **Interface Layer:** Exposes REST APIs for user login, token validation, and management.
--   **Adapters Layer:** Converts external requests/responses into domain-friendly formats; interfaces with databases and external systems.
--   **Application Layer:** Coordinates user-related use cases such as login, registration, and token refresh.
--   **Domain Layer:** Contains the business logic for authentication and identity validation.
--   **Infrastructure Layer:** Manages repositories, persistence mechanisms, and security utilities (e.g., JWT).
+- **Interface Layer:** Exposes REST APIs for user login, token validation, and management.
+- **Adapters Layer:** Converts external requests/responses into domain-friendly formats; interfaces with databases and external systems.
+- **Application Layer:** Coordinates user-related use cases such as login, registration, and token refresh.
+- **Domain Layer:** Contains the business logic for authentication and identity validation.
+- **Infrastructure Layer:** Manages repositories, persistence mechanisms, and security utilities (e.g., JWT).
 
 ##### **`Tier 5.2: Logic`**
 
 ##### `Routes Service (NestJS)`
 
--   **Presentation Layer:** Provides REST endpoints and maps incoming requests to application use cases.
--   **Application Layer:** Implements the logic for route creation, querying, and filtering.
--   **Domain Layer:** Defines entities (Route, Segment, etc.) and business rules for route computation.
--   **Infrastructure Layer:** Handles data persistence and integration with RabbitMQ for asynchronous messaging.
+- **Presentation Layer:** Provides REST endpoints and maps incoming requests to application use cases.
+- **Application Layer:** Implements the logic for route creation, querying, and filtering.
+- **Domain Layer:** Defines entities (Route, Segment, etc.) and business rules for route computation.
+- **Infrastructure Layer:** Handles data persistence and integration with RabbitMQ for asynchronous messaging.
 
 ##### `Distances Service (Python - FastAPI)`
 
--   **Interface Layer:** Exposes REST/GraphQL endpoints for distance calculations and metrics.
--   **Adapters Layer:** Converts geospatial inputs (e.g., coordinates) into domain formats.
--   **Application Layer:** Orchestrates use cases, such as "Calculate Distance" or "Analyze Route Metric".
--   **Domain Layer:** Contains the pure business logic and algorithms for geospatial calculations.
--   **Infrastructure Layer:** Manages data access (e.g., to `geography-db`) or external map APIs.
+- **Interface Layer:** Exposes REST/GraphQL endpoints for distance calculations and metrics.
+- **Adapters Layer:** Converts geospatial inputs (e.g., coordinates) into domain formats.
+- **Application Layer:** Orchestrates use cases, such as "Calculate Distance" or "Analyze Route Metric".
+- **Domain Layer:** Contains the pure business logic and algorithms for geospatial calculations.
+- **Infrastructure Layer:** Manages data access (e.g., to `geography-db`) or external map APIs.
 
 ##### `Notification Service (Java - Spring)`
 
--   **Presentation Layer:** Defines endpoints and queue consumers for receiving notification events.
--   **Application Layer:** Coordinates notification delivery workflows.
--   **Messaging Layer:** Manages communication with RabbitMQ, retries, and message routing.
--   **Business Layer:** Defines templates, prioritization logic, and delivery policies.
+- **Presentation Layer:** Defines endpoints and queue consumers for receiving notification events.
+- **Application Layer:** Coordinates notification delivery workflows.
+- **Messaging Layer:** Manages communication with RabbitMQ, retries, and message routing.
+- **Business Layer:** Defines templates, prioritization logic, and delivery policies.
+
+#### **`Tier 6: Async Communication`**
+
+##### `Messenger Queue (RabbitMQ)`
+
+- **Connection Layer:** Manages AMQP connections, channels, and connection pooling between producers and consumers.
+- **Exchange Layer:** Defines message routing logic through exchanges (direct, topic, fanout, headers) that route messages to appropriate queues.
+- **Queue Layer:** Stores messages persistently or in-memory, manages queue properties (durability, exclusivity, auto-delete), and handles message acknowledgments.
+- **Management Layer:** Provides monitoring, administration interfaces, and plugin management for observability and system health checks.
+
+#### **`Tier 7: Data`**
+
+##### `geography-db (PostgreSQL with PostGIS)`
+
+- **Connection Layer:** Manages database connections, connection pooling, and session handling for client applications.
+- **Query Processing Layer:** Parses, optimizes, and executes SQL queries, including geospatial queries with PostGIS extensions.
+- **Storage Engine Layer:** Handles physical data storage, indexing (B-tree, GiST for spatial data), transaction management (ACID compliance), and write-ahead logging (WAL).
+- **Extension Layer:** Provides PostGIS geospatial functions, operators, and spatial indexing capabilities for geographic data operations.
+
+##### `user-db (NoSQL - Firebase Firestore)`
+
+- **API Layer:** Exposes REST and SDK interfaces for document operations (CRUD) and real-time listeners.
+- **Document Store Layer:** Manages document-based data storage with flexible schemas, collections, and subcollections.
+- **Indexing Layer:** Automatically creates and manages indexes for query optimization and enforces composite indexes for complex queries.
+- **Replication Layer:** Handles data synchronization across distributed nodes, ensures consistency, and manages offline persistence with automatic conflict resolution.
+
+##### `logs-db (Loki)`
+
+- **Ingestion Layer:** Receives log streams via HTTP API (Promtail, log agents), validates, and buffers incoming log data.
+- **Indexing Layer:** Creates and manages indexes based on labels (metadata), optimized for time-series log queries without full-text indexing.
+- **Storage Layer:** Compresses and stores log data in chunks, manages retention policies, and handles data compaction.
+- **Query Layer:** Processes LogQL queries, performs label filtering, aggregation, and returns log results for observability and debugging.
+
+#### **`Tier 8: Mobile Data`**
+
+##### `mobile-db (SQLite)`
+
+- **Connection Layer:** Manages single-user database connections and handles file locking for concurrent access in mobile environment.
+- **SQL Engine Layer:** Parses and executes SQL queries, manages transactions (BEGIN, COMMIT, ROLLBACK), and provides ACID guarantees.
+- **Storage Layer:** Handles physical file storage, page-based storage management, B-tree indexes, and database file organization.
+- **Cache Layer:** Implements in-memory caching of frequently accessed data, manages page cache, and optimizes read/write operations for mobile device constraints.
 
 #### Description of architectural patterns used
 
@@ -638,64 +708,76 @@ This allows scalable and reactive UIs while keeping state management predictable
 
 The **Run Path System** is composed of three main modules operating in a modular and coordinated manner: **User Authentication**, **Routes**, and **Notifications**. Each module performs a distinct role within the platform.
 
-
-
 ### Decomposition View
 
 ![Decomposition-View](./imgs/decomposition_view_prototype3.png)
 
 ### Modules and functionalities
 
-#### User Authentication 
+#### User Authentication
+
 Manages **user identity**, **access**, and **session control**and interacts through internal APIs and events to maintain consistency and scalability. to ensure secure authentication across the platform.
 
 ##### User Management
+
 Handles the user account lifecycle:
-- **Create user:** registers new users in the system.  
-- **Update user:** updates user profile information.  
-- **Delete user:** permanently removes a user account.  
-- **Change password:** allows users to update their password.  
+
+- **Create user:** registers new users in the system.
+- **Update user:** updates user profile information.
+- **Delete user:** permanently removes a user account.
+- **Change password:** allows users to update their password.
 
 ##### Session Management
+
 Controls login and session state:
-- **User login:** authenticates credentials and generates an access token.  
-- **Log out:** invalidates the active user session.  
-- **Verify token:** validates the authenticity and expiration of the access token.  
+
+- **User login:** authenticates credentials and generates an access token.
+- **Log out:** invalidates the active user session.
+- **Verify token:** validates the authenticity and expiration of the access token.
 
 #### Routes Service
+
 Responsible for the **creation**, **management**, and **search** of running routes.
 
 ##### Routes Management
+
 Provides core CRUD functionality:
-- **Create route:** allows users to define and save new running routes.  
-- **Update route:** edits existing route details.  
-- **Delete route:** removes a route from the system.  
+
+- **Create route:** allows users to define and save new running routes.
+- **Update route:** edits existing route details.
+- **Delete route:** removes a route from the system.
 
 ##### Routes Search
+
 Enables discovery and exploration of routes:
-- **Get routes:** retrieves a general list of available routes.  
-- **Filter nearby routes:** searches for routes near a specific geographic location.  
-- **Get route information:** provides detailed information about a selected route.  
+
+- **Get routes:** retrieves a general list of available routes.
+- **Filter nearby routes:** searches for routes near a specific geographic location.
+- **Get route information:** provides detailed information about a selected route.
 
 #### Notifications Service
+
 Handles **email communications** triggered by user activity or engagement needs.
 
 ##### Email Notifications
+
 Manages message composition and delivery:
-- **Notify route completed:** sends a congratulatory email when a user completes a route.  
-- **Send engagement emails:** sends reactivation or motivational emails to inactive users.  
+
+- **Notify route completed:** sends a congratulatory email when a user completes a route.
+- **Send engagement emails:** sends reactivation or motivational emails to inactive users.
 
 # Quality attributes
 
 ## Security
 
 ### Scenario 1 – Unauthorized Interception and Network Link Compromise
-* **Source:** Any malicious actor attempting to intercept or alter the communication between the web client and the system.
-* **Stimulus:** Attempts to perform sniffing or man-in-the-middle attacks during information exchange with the web frontend.
-* **Artifact:** Communication channel between the web client and the frontend component.
-* **Enviroment:** Normal operation.
-* **Response:** The system protects the exchanged information and verifies the authenticity of the communicating parties.
-* **Response measure:** Intercepted data is unreadable and unusable, and any modification is detected and rejected.
+
+- **Source:** Any malicious actor attempting to intercept or alter the communication between the web client and the system.
+- **Stimulus:** Attempts to perform sniffing or man-in-the-middle attacks during information exchange with the web frontend.
+- **Artifact:** Communication channel between the web client and the frontend component.
+- **Enviroment:** Normal operation.
+- **Response:** The system protects the exchanged information and verifies the authenticity of the communicating parties.
+- **Response measure:** Intercepted data is unreadable and unusable, and any modification is detected and rejected.
 
 <p align="center">
 <img src="./imgs/scenario1_linkcompromise.png">
@@ -705,12 +787,12 @@ Manages message composition and delivery:
 
 ### Scenario 2 – Unauthorized Access to Private Components
 
-* **Source:** Any malicious actor or automated scanner operating from the Internet.
-* **Stimulus:** Attempts to directly communicate with sensitive system components (backend, orchestration, etc.).
-* **Artifact:** Critical system components.
-* **Enviroment:** Normal operation.
-* **Response:** The system rejects direct requests to sensitive components and only allows access through authorized public entry points.
-* **Response measure:** Unauthorized access attempts are rejected, and information about internal components remains concealed.
+- **Source:** Any malicious actor or automated scanner operating from the Internet.
+- **Stimulus:** Attempts to directly communicate with sensitive system components (backend, orchestration, etc.).
+- **Artifact:** Critical system components.
+- **Enviroment:** Normal operation.
+- **Response:** The system rejects direct requests to sensitive components and only allows access through authorized public entry points.
+- **Response measure:** Unauthorized access attempts are rejected, and information about internal components remains concealed.
 
 <p align="center">
 <img src="./imgs/scenario2_unauthorizedaccess.png">
@@ -720,12 +802,12 @@ Manages message composition and delivery:
 
 ### Scenario 3 – Public Exposure of Critical Components
 
-* **Source:** Internal or external attacker who has obtained initial access to a low-value public part of the system.
-* **Stimulus:** The attacker attempts lateral movement to access other sensitive components (databases, services, etc.).
-* **Artifact:** Critical system components.
-* **Enviroment:** After compromise of a low-value public part of the system.
-* **Response:** The system maintains access separation among components, preventing unauthorized access to internal resources.
-* **Response measure:** Attempts to send network requests to other components are blocked, and the targeted resources remain inaccessible and protected.
+- **Source:** Internal or external attacker who has obtained initial access to a low-value public part of the system.
+- **Stimulus:** The attacker attempts lateral movement to access other sensitive components (databases, services, etc.).
+- **Artifact:** Critical system components.
+- **Enviroment:** After compromise of a low-value public part of the system.
+- **Response:** The system maintains access separation among components, preventing unauthorized access to internal resources.
+- **Response measure:** Attempts to send network requests to other components are blocked, and the targeted resources remain inaccessible and protected.
 
 <p align="center">
 <img src="./imgs/scenario3_publicexposure.png">
@@ -735,12 +817,12 @@ Manages message composition and delivery:
 
 ### Scenario 4 – Service Degradation or Denial Due to Excessive Traffic
 
-* **Source:** Attacker or automated bot attempting to degrade the system’s availability.
-* **Stimulus:** Sending an excessive volume of requests to the frontend in order to saturate its processing capacity.
-* **Artifact:** The runpath-web-frontend component and its public entry point.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system detects abnormal behavior and blocks the source of the excessive requests.
-* **Response measure:** Requests from the same IP address are blocked when exceeding a threshold of five requests per second.
+- **Source:** Attacker or automated bot attempting to degrade the system’s availability.
+- **Stimulus:** Sending an excessive volume of requests to the frontend in order to saturate its processing capacity.
+- **Artifact:** The runpath-web-frontend component and its public entry point.
+- **Enviroment:** Normal operation under high request traffic.
+- **Response:** The system detects abnormal behavior and blocks the source of the excessive requests.
+- **Response measure:** Requests from the same IP address are blocked when exceeding a threshold of five requests per second.
 
 <p align="center">
 <img src="./imgs/scenario4_servicedegradation.png">
@@ -754,23 +836,23 @@ Manages message composition and delivery:
 
 **Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
 
-**Application:** It is applied on the public channel   between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.  
+**Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
 
 **Associated Pattern:** Secure Channel Pattern.
 
 #### 2. Limit Access
 
-**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.  
+**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
 
-**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.  
+**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
 
 **Associated Pattern:** Reverse Proxy Pattern.
 
 #### 3. Detect Service Denial
 
-**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.  
+**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
 
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.  
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
 
 **Associated Pattern:** Web Application Firewall (WAF) Pattern.
 
@@ -797,6 +879,7 @@ Each system tier is isolated within a private network, allowing communication on
 The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
 
 #### 4. Web Application Firewall (WAF) Pattern
+
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
 The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
 The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
@@ -805,18 +888,19 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ### Relationship Between Applied Patterns and Scenarios
 
-| **Scenario** | **Pattern** | **Explanation** |
-|---------------|-------------|-----------------|
-| Scenario 1 – Unauthorized Interception and Network Link Compromise | Secure Channel Pattern | Ensures all communications between the client and the frontend are encrypted and authenticated, preserving data confidentiality and integrity. |
-| Scenario 2 – Unauthorized Access to Private Components | Reverse Proxy Pattern | Filters and controls all inbound traffic, exposing only authorized public endpoints while masking internal components and network structure. |
-| Scenario 3 – Public Exposure of Critical Components | Network Segmentation Pattern | Separates the system into isolated network zones, preventing lateral movement and unauthorized access to sensitive backend services. |
-| Scenario 4 – Service Degradation or Denial Due to Excessive Traffic | Web Application Firewall (WAF) Pattern | Monitors and limits request rates, blocking suspicious or excessive traffic to maintain system availability against DoS attacks. |
+| **Scenario**                                                        | **Pattern**                            | **Explanation**                                                                                                                                |
+| ------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scenario 1 – Unauthorized Interception and Network Link Compromise  | Secure Channel Pattern                 | Ensures all communications between the client and the frontend are encrypted and authenticated, preserving data confidentiality and integrity. |
+| Scenario 2 – Unauthorized Access to Private Components              | Reverse Proxy Pattern                  | Filters and controls all inbound traffic, exposing only authorized public endpoints while masking internal components and network structure.   |
+| Scenario 3 – Public Exposure of Critical Components                 | Network Segmentation Pattern           | Separates the system into isolated network zones, preventing lateral movement and unauthorized access to sensitive backend services.           |
+| Scenario 4 – Service Degradation or Denial Due to Excessive Traffic | Web Application Firewall (WAF) Pattern | Monitors and limits request rates, blocking suspicious or excessive traffic to maintain system availability against DoS attacks.               |
 
 ---
 
 ## Verification Tests
 
 #### 1. Data Interception:
+
 Using a packet capture tool (Wireshark), network traffic between the client and the runpath-web-frontend component was intercepted. The captured packets show that all transmitted information is encrypted, confirming that data in transit is properly protected.
 
 <p align="center">
@@ -824,6 +908,7 @@ Using a packet capture tool (Wireshark), network traffic between the client and 
 </p>
 
 #### 2. Ping Requests Between Containers:
+
 Connectivity tests were performed among the deployed containers, recording both successful and failed attempts. The results demonstrate that network segmentation effectively isolates the data, services, and orchestration layers, allowing access only between authorized components according to the private network configuration.
 
 <p align="center">
@@ -831,6 +916,7 @@ Connectivity tests were performed among the deployed containers, recording both 
 </p>
 
 #### 3. DoS Attack Simulation:
+
 An automated script executed 200 concurrent requests (in batches of 50) directed to the runpath-web-frontend component, simulating a Denial of Service (DoS) attack. The test results show that the system blocks access from the originating source and displays a warning message, confirming that the configured WAF defense mechanism was successfully triggered.
 
 <p align="center">
@@ -885,7 +971,7 @@ The hardware specifications of the nodes used for testing were as follows:
   - **Storage:** 512 GB SSD
   - **OS:** Windows 11 Home
 
-The client connected to the server via a low traffic LAN network. 
+The client connected to the server via a low traffic LAN network.
 
 #### Test plan
 
@@ -897,16 +983,15 @@ A test plan was designed to simulate a normal user flow under varying load. The 
 
 The system operates under optimal response times until reaching approximately 120 concurrent users in one second. Beyond this point, response times begin to increase significantly. Therefore the knee in the performance curve is around 120 users/second. Around this workload, the system yields the following average metrics, considering the destionation of requests:
 
-
-- FRONT	38,33333333 ms
-- AUTH	27876,75 ms
-- FULL	10159 ms
+- FRONT 38,33333333 ms
+- AUTH 27876,75 ms
+- FULL 10159 ms
 
 While a single user request yields the following average metrics:
 
-- FRONT	12 ms
-- AUTH	480,75 ms
-- FULL	186 ms
+- FRONT 12 ms
+- AUTH 480,75 ms
+- FULL 186 ms
 
 **Hardware arrangement 2:**
 
@@ -914,25 +999,24 @@ While a single user request yields the following average metrics:
 
 The system operates under optimal response times until reaching approximately 100 concurrent users in one second. Beyond this point, response times begin to increase significantly. Therefore the knee in the performance curve is around 100 users/second. Around this workload, the system yields the following average metrics, considering the destionation of requests:
 
-- FRONT	23,30769231 ms
-- AUTH	20559,5 ms
-- FULL	5364,05 ms
+- FRONT 23,30769231 ms
+- AUTH 20559,5 ms
+- FULL 5364,05 ms
 
 While a single user request yields the following average metrics:
 
-- FRONT	4,692307692 ms
-- AUTH	470,5 ms
-- FULL	99,3 ms
-
+- FRONT 4,692307692 ms
+- AUTH 470,5 ms
+- FULL 99,3 ms
 
 ### Scenario 1 – Authentication Service Performance
 
-* **Source:** 100 legitimate users attempting to log into the system.
-* **Stimulus:** 1100 login requests are sent within one second.
-* **Artifact:** The runpath-login component.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system processes all authentication requests successfully.
-* **Response measure:** All authentication requests are processed in response time less than 20559 miliseconds.
+- **Source:** 100 legitimate users attempting to log into the system.
+- **Stimulus:** 1100 login requests are sent within one second.
+- **Artifact:** The runpath-login component.
+- **Enviroment:** Normal operation under high request traffic.
+- **Response:** The system processes all authentication requests successfully.
+- **Response measure:** All authentication requests are processed in response time less than 20559 miliseconds.
 
 <p align="center">
 <img src="./imgs/scenario1_authenticationperformance.png">
@@ -944,12 +1028,12 @@ While a single user request yields the following average metrics:
 
 ### Scenario 2 - Frontend Performance
 
-* **Source:** 100 legitimate users attempting to access the system.
-* **Stimulus:** 1300 requests are sent within one second.
-* **Artifact:** The runpath-web-frontend component.
-* **Enviroment:** Normal operation under high request traffic.
-* **Response:** The system processes all incoming access requests to the frontend.
-* **Response measure:** All frontend requests are processed in response time less than 23 miliseconds.
+- **Source:** 100 legitimate users attempting to access the system.
+- **Stimulus:** 1300 requests are sent within one second.
+- **Artifact:** The runpath-web-frontend component.
+- **Enviroment:** Normal operation under high request traffic.
+- **Response:** The system processes all incoming access requests to the frontend.
+- **Response measure:** All frontend requests are processed in response time less than 23 miliseconds.
 
 <p align="center">
 <img src="./imgs/scenario2_frontendperformance.png">
@@ -982,13 +1066,12 @@ This pattern ensures efficient horizontal scalability, enhancing response time a
 
 ### Relationship Between Applied Patterns and Scenarios
 
-| **Scenario** | **Pattern** | **Explanation** |
-|---------------|-------------|-----------------|
-| Scenario 1 – Frontend Performance | Load Balancer Pattern | The load balancer distributes incoming user requests among multiple instances of the *runpath-web-frontend* component, reducing response time and avoiding overload on a single node. |
-| Scenario 2 – Authentication Service Performance | Load Balancer Pattern | The load balancer distributes authentication requests from the API Gateway across several *runpath-login* instances, improving throughput and ensuring consistent performance under high demand. |
+| **Scenario**                                    | **Pattern**           | **Explanation**                                                                                                                                                                                  |
+| ----------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scenario 1 – Frontend Performance               | Load Balancer Pattern | The load balancer distributes incoming user requests among multiple instances of the _runpath-web-frontend_ component, reducing response time and avoiding overload on a single node.            |
+| Scenario 2 – Authentication Service Performance | Load Balancer Pattern | The load balancer distributes authentication requests from the API Gateway across several _runpath-login_ instances, improving throughput and ensuring consistent performance under high demand. |
 
 ---
-
 
 ## Deployment instructions
 
@@ -1142,4 +1225,3 @@ checks:
    ```bash
    docker logs <container_name>
    ```
-
