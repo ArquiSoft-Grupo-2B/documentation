@@ -85,13 +85,23 @@ Available both on the web and as a mobile application, RunPath provides a simple
 - **Technology:** Express Gateway
 - **Description:** Internal gateway that receives requests from the mobile reverse proxy and the web frontend. It is responsible for orchestrating requests to the internal microservices, handling authentication and authorization.
 
+---
+
 #### `mobile-reverse-proxy`
 - **Technology:** Nginx
 - **Description:** Responsible for exposing a public endpoint for the mobile interface component. It masks direct access to the API Gateway and keeps backend services hidden from mobile users, controlling and redirecting traffic from the mobile client to the API Gateway.
 
-#### `web-proxy-waf`
+---
+
+#### `load-balancer-web-proxy-waf`
 - **Technology:** nginx
 - **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
+
+---
+
+#### `load-balance-auth`
+- **Technology**: nginx
+- **Description**: Acts as a load balancer for the authentication services that are replicated to ensure traffic distribution among the instances.
 
 ---
 
@@ -108,7 +118,8 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `runpath-notifications-queue` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
 | `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
 | `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
-| `web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balancer-web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balance-auth` | Nginx | Distribute the authentication requests between the authentication-containers | Redirects the requests from API Gateway to the authentication service |
 
 ### Connector Description
 
@@ -163,10 +174,10 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Description:** Allows the web interface to interact with the system's microservices through the gateway.
 
 2. **HTTP Connector with Reverse Proxy and Waf**
-   - **Components:** runpath-frontend (Next.js) ↔ web-proxy-waf (Nginx)
+   - **Components:** runpath-frontend (Next.js) ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
-   - **Description:** Enables communication with the web-proxy-waf component, acting as an intermediary between web frontend and web client.
+   - **Description:** Enables communication with the load-balancer-web-proxy-waf component, acting as an intermediary between web frontend and web client.
 
 3. **HTTP Connector with Reverse Proxy (Mobile)**
    - **Components:** runpath-mobile (Kotlin) ↔ mobile-reverse-proxy (Nginx)
@@ -184,11 +195,11 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 #### API Gateway Connectors
 
-1. **HTTP/GraphQL Connector with Authentication**
-   - **Components:** API Gateway (Express Gateway) ↔ runpath-login (FastAPI)
-   - **Protocol:** HTTP/GraphQL
-   - **Communication:** Client → Server, Synchronous Request/Response
-
+1. **HTTP/GraphQL Connector with Load Balancer**
+   - **Components:** API Gateway (Express Gateway) ↔ load-balance-auth (Nginx)
+   - **Protocol:** HTTP
+   - **Communication:** Bidirectional
+  
 2. **HTTP/REST Connector with Routes Service**
    - **Components:** API Gateway (Express Gateway) ↔ runpath-routes (Node.js)
    - **Protocol:** HTTP/REST
@@ -209,12 +220,12 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Security componentes connectors
 
 1. **HTTP Connector with web frontend**
-   - **Components:** web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 2. **HTTP Connector with web client**
-   - **Components:** web-proxy-waf (Nginx) ↔ web client
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ web client
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
@@ -241,13 +252,24 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Components:** runpath-routes (Node.js) → runpath-notifications-queue (RabbitMQ)
    - **Protocol:** AMQP
    - **Communication:** Unidirectional, Asynchronous Communication (publish)
+  
+---
+
+#### Performance components connectors
+
+1. **HTTP/GraphQL Connector with Authentication**
+   - **Components:** load-balance-auth (Nginx) ↔ runpath-login (FastAPI)
+   - **Protocol:** HTTP/GraphQL
+   - **Communication:** Bidirectional
+
+---
 
 #### Client Connectors
 
 ##### Web Client Connectors
 
 1. **HTTP Connector with the SSR Presentation Component**
-   - **Components:** Web Browser ↔ web-proxy-waf (Nginx)
+   - **Components:** Web Browser ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client→Server, Synchronous Request/Response
 
@@ -289,15 +311,14 @@ The pattern protects user credentials and sensitive information from potential a
 
 #### Reverse Proxy Pattern
 
-he RunPath System applies the Reverse Proxy Pattern.
+The RunPath System applies the Reverse Proxy Pattern.
 In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
 The pattern protects the system from attempts to scan or attack internal services.
 
-#### Network Segmentation Pattern
+#### Load Balancer Pattern
 
-The RunPath System applies the Network Segmentation Pattern.
-Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
-The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+The RunPath System applies the Load Balancer Pattern.
+In the system, there are two load balancers for the following services: Authentication and frontend-ssr. They are in charge of handles messages from various clients in order to distributed them among the computations available for each service.
 
 #### WAF Pattern
 The RunPath System applies the Web Application Firewall (WAF) Pattern.
@@ -320,8 +341,8 @@ The pattern protects the web frontend component from potential Denial of Service
    - Communicates securely with the API Gateway over HTTPS to access backend services.
    - Supports offline operations and periodic synchronization with central services.
 
-2. **Server (routes_shared_network)**
-   - Virtual host containing multiple Docker containers representing backend microservices and supporting components.
+2. **Server**
+   - Host containing multiple Docker containers representing backend microservices and supporting components.
    - Containers communicate internally through a shared virtual network for isolation and controlled inter-service access.
 
    **Contained Elements:**
@@ -329,7 +350,15 @@ The pattern protects the web frontend component from potential Denial of Service
      *Deployed Component:* `runpath-distance`  
      *Description:* Computes distances and geospatial metrics using OSRM, communicating with the Routes Service via the API Gateway.
 
-   - **authentication-service**  
+   - **authentication-service** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-1** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-2** 
      *Deployed Component:* `runpath-login`  
      *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
 
@@ -356,18 +385,30 @@ The pattern protects the web frontend component from potential Denial of Service
    - **runpath_frontend**  
      *Deployed Component:* `runpath-web-frontend-ssr`  
      *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-1**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-2**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
    
    - **mobile_nginx**  
      *Deployed Component:* `mobile-reverse-proxy`  
      *Description:* Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
    
    - **reverse-proxy**  
-     *Deployed Component:* `web-proxy-waf`  
+     *Deployed Component:* `load-balancer-web-proxy-waf`  
      *Description:* Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
 
    - **loki, promtail, grafana**  
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
+
+   - **load-balance-auth**
+     *Deployed Component:* `load-balance-auth`
+     *Description:* Distributed traffic from authentication requests between the computations available for the service.
    
    - **ngin-tls-gateway**  
      *Deployed Component:* TLS stack  
@@ -382,78 +423,92 @@ The pattern protects the web frontend component from potential Denial of Service
 
 #### Network Schema
 
-1. **db_net:** Private network dedicated to data management. Contains data components and services that exchange and manage information.
-2. **backend_net:** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
-3. **orchestration_net:** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
-4. **frontend_net:** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
-6. **public_net:** Public network that contains the reverse proxies, allowing public access only to these components.
+1. **db_net (172.30.0.0/16):** Private network dedicated to data management. Contains data components and services that exchange and manage information.
+2. **backend_net (172.28.0.0/16):** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
+3. **orchestration_net (172.29.0.0/16):** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
+4. **frontend_net (172.27.0.0/16):** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
+6. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
 
 
 ## Layered Structure
 
 ### Tier View
 
-<img src="./imgs/tier_view_prototype3 (1).drawio.png"/>
+<img src="./imgs/tier_view_prototype3.drawio (2).png"/>
 
 #### Elements description
 
-##### `Tier 0 — Presentation`
+##### `Tier 0 — Security`
 
--   Frontend Web (NextJS SSR): web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
--   Frontend Mobile (Kotlin): native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
+-   **`web-proxy-waf (Nginx)`**: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).
 
-##### `**Tier 1 — Edge/Security**`
+##### `Tier 1 — Presentation`
 
--   **`web-proxy-waf (Nginx)`: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).**
--   **`mobile-reverse-proxy (Nginx)`: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.**
+-   `Frontend Web (NextJS SSR)`: web interface implementing Server-Side Rendering; consumes APIs via the API Gateway.
+-   `Frontend Mobile (Kotlin)`: native Android app that provides the mobile UI; can operate online and keep a local DB (mobile-db) for sync/offline.
 
-##### `Tier 2 — Orchestration`
+##### `Tier 2 — Edge`
 
--   API Gateway (Express-gateway): unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
+-   **`mobile-reverse-proxy (Nginx)`**: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.
 
-##### `Tier 3 — Logic`
+##### `Tier 3 — Orchestration`
 
--   Authentication Service (Python - FastAPI): handles login, token issuance/validation, and user management.
--   Routes Service (JS - NestJS): manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
--   **`Distances Service (Python - FastAPI)`: Service responsible for calculating distances between geographical points and analyzing route-related metrics.**
--   Notification Service (Java - Spring): responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
+-   `API Gateway (Express-gateway)`: unified entry point for frontends. Routes requests, applies policies (authentication/authorization), and forwards to microservices.
 
-##### `Tier 4 — Async Communication`
+##### `**Tier 4 — Load Balancing**`
 
--   Messenger Queue (RabbitMQ): message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
+-   **`Load Balancer (Nginx)`: An internal Nginx component that acts as an intermediary to distribute incoming requests to the `Authentication Service`, enhancing its scalability and resilience.**
 
-##### `Tier 5 — Data (central persistence / storage)`
+##### `**Tier 5 — Logic**`
 
--   geography-db (PostgreSQL): relational DB with geospatial capabilities (PostGIS implied) for map/route data.
--   user-db (NoSQL): flexible-schema store for users/profiles/sessions, **associated with the Firebase Authentication service.**
--   logs-db (Loki): logging store for observability/telemetry.
+-   **`Tier 5.1: Logic`**
+    -   `Authentication Service (Python - FastAPI)`: handles login, token issuance/validation, and user management.
+-   **`Tier 5.2: Logic`**
+    -   `Routes Service (JS - NestJS)`: manages creation, querying, and filtering of routes (core domain). Produces messages to the Messenger Queue for async processing.
+    -   `Distances Service (Python - FastAPI)`: Service responsible for calculating distances between geographical points and analyzing route-related metrics.
+    -   `Notification Service (Java - Spring)`: responsible for notifications (email). Consumes messages asynchronously from the messaging Queue.
 
-##### `Tier 6 — Mobile data (local mobile storage)`
+##### `**Tier 6 — Async Communication**`
 
--   mobile-db (SQLite): on-device local DB for caching and offline operation/synchronization.
+-   `Messenger Queue (RabbitMQ)`: message broker/queue for decoupling producers and consumers. Used for asynchronous tasks (e.g., sending notifications, batch processing, events).
+
+##### `**Tier 7 — Data (central persistence / storage)**`
+
+-   `geography-db (PostgreSQL)`: relational DB with geospatial capabilities (PostGIS implied) for map/route data.
+-   `user-db (NoSQL)`: flexible-schema store for users/profiles/sessions, associated with the Firebase Authentication service.
+-   `logs-db (Loki)`: logging store for observability/telemetry.
+
+##### `**Tier 8 — Mobile data (local mobile storage)**`
+
+-   `mobile-db (SQLite)`: on-device local DB for caching and offline operation/synchronization.
 
 #### Relationships description
 
--   **`Web Flow:` `Tier 1 (web-proxy-waf)` receives requests from the web client and serves/protects `Tier 0 (Frontend Web)`. `Tier 0 (Frontend Web)` in turn consumes data from `Tier 2 (API Gateway)`.**
--   **`Mobile Flow:` `Tier 0 (Frontend Mobile)` communicates with `Tier 1 (mobile-reverse-proxy)`. This proxy securely forwards requests to `Tier 2 (API Gateway)`.**
--   **`Backend Flow:` `Tier 2 (Orchestration)` routes requests to the appropriate microservices in `Tier 3 (Logic)`.**
--   **`Data Flow:` `Tier 3 (Logic)` services access their data stores in `Tier 5 (Data)`.**
--   **`Async Flow:` `Tier 3 (Logic)` services publish and/or consume messages from `Tier 4 (Async Communication)` for asynchronous work.**
--   **`Mobile Data Flow:` `Tier 0 (Frontend Mobile)` uses its local DB in `Tier 6 (Mobile data)`.**
+-   **`Web Flow:` `Tier 0 (Security)` receives requests and serves/protects `Tier 1 (Frontend Web)`. `Tier 1 (Frontend Web)` in turn consumes data from `Tier 3 (Orchestration)`.**
+-   **`Mobile Flow:` `Tier 1 (Frontend Mobile)` communicates with `Tier 2 (Edge)`. This proxy securely forwards requests to `Tier 3 (Orchestration)`.**
+-   **`Backend Logic Flow:` `Tier 3 (Orchestration)` routes requests directly to the services in `Tier 5.2 (Logic)`.**
+-   **`Authentication Flow:` For authentication, `Tier 3 (Orchestration)` sends requests to `Tier 4 (Load Balancer)`, which then distributes them to `Tier 5.1 (Logic)`.**
+-   **`Data Flow:` Services in both `Tier 5.1` and `Tier 5.2` access their required data stores in `Tier 7 (Data)`.**
+-   **`Async Flow:` `Tier 5.2 (Logic)` services publish and/or consume messages from `Tier 6 (Async Communication)`.**
+-   **`Mobile Data Flow:` `Tier 1 (Frontend Mobile)` uses its local DB in `Tier 8 (Mobile data)`.**
 
 #### Description of architectural patterns used
 
 ##### `N-tier Architecture`
 
-Clear separation into **Edge/Security, Presentation, Orchestration, Logic, Data** and an asynchronous communication layer. Helps responsibility separation, independent deployment and scaling.
+Clear separation into **Security, Presentation, Edge, Orchestration, Load Balancing, Logic, Data**, and **Async Communication** layers. Helps responsibility separation, independent deployment and scaling.
 
-##### **`Reverse Proxy Pattern`**
+##### **`Load Balancing Pattern`**
 
-**Implemented in `Tier 1` to securely mediate communication between clients and the system, redirecting requests and masking the internal infrastructure.**
+**Implemented in `Tier 4` to distribute requests to the `Authentication Service`, improving its scalability and resilience.**
 
-##### **`WAF Pattern`**
+##### `Reverse Proxy Pattern`
 
-**Applied at the `web-proxy-waf` (Tier 1) to establish a boundary on incoming requests and protect the web frontend from common attacks like DoS.**
+Implemented in `Tier 0` and `Tier 2` to securely mediate communication between clients and the system, redirecting requests and masking the internal infrastructure.
+
+##### `WAF Pattern`
+
+Applied at the `web-proxy-waf` (Tier 0) to establish a boundary on incoming requests and protect the web frontend from common attacks like DoS.
 
 ##### `Local Cache + Sync`
 
@@ -467,7 +522,7 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 ### Layered View
 
-<img src="./imgs/layers_view_prototype3 (1).drawio.png"/>
+<img src="./imgs/layers_view_prototype3.drawio (2).png"/>
 
 #### Elements description
 
@@ -487,20 +542,21 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 -   **Layer 3: Domain Layer:** Contains the core business logic, use cases (interactors), and domain models, completely independent of the UI.
 -   **Layer 4: Data Access:** The repository layer. It abstracts the data sources, managing whether to fetch data from the local `mobile-db` (SQLite) or the remote API.
 
-#### **`Edge/Security Layers`**
+#### **`Tier 0: Security Layer`**
 
-##### **`web-proxy-waf (Nginx)`**
+##### **`load-balancer-web-proxy-waf (Nginx)`**
 
--   **`Layer 1: Reverse Proxy:` Forwards HTTP/HTTPS requests to the `Frontend Web` component.**
--   **`Layer 2: WAF Ruleset:` Applies firewall rules (e.g., rate limiting) to filter malicious traffic.**
--   **`Layer 3: Caching Layer:` Caches static assets to improve performance.**
+-   **Layer 1: Reverse Proxy:** Forwards HTTP/HTTPS requests to the `Frontend Web` component.
+-   **Layer 2: WAF Ruleset:** Applies firewall rules (e.g., rate limiting) to filter malicious traffic.
+-   **Layer 3: Caching Layer:** Caches static assets to improve performance.
+
+#### **`Tier 2: Edge Layer`**
 
 ##### **`mobile-reverse-proxy (Nginx)`**
 
--   **`Layer 1: Reverse Proxy:` Forwards HTTP/HTTPS requests to the `API Gateway`.**
--   **`Layer 2: Request Routing:` Directs traffic based on mobile API routes.**
+-   **`Layer 1: Configuration Layer`**: Contains Nginx configuration files that define routing rules, security headers, and proxy settings for all incoming mobile traffic.
 
-#### Orchestration Layers
+#### **`Tier 3: Orchestration Layer`**
 
 ##### `API Gateway (Express-Gateway)`
 
@@ -509,7 +565,15 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 -   **Layer 3: Middleware Layer:** Enforces **cross-cutting concerns** such as authentication, authorization checks, API rate limiting, and centralized logging.
 -   **Layer 4: Service Integration Layer:** Manages **communication** with the backend microservices, handles protocol translation, service composition (orchestration), and error centralization.
 
-#### Backend Layers
+#### **`Tier 4: Load Balancing Layer`**
+
+##### **`Load Balancer (Nginx)`**
+
+-   **`Layer 1: Configuration Layer`**: Defines the upstream server pool (the `Authentication Service` instances) and the load balancing strategy (e.g., round-robin, least connections) to be used.
+
+#### **`Tier 5: Logic Layers`**
+
+##### **`Tier 5.1: Logic`**
 
 ##### `Authentication Service (Python - FastAPI)`
 
@@ -519,6 +583,8 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 -   **Domain Layer:** Contains the business logic for authentication and identity validation.
 -   **Infrastructure Layer:** Manages repositories, persistence mechanisms, and security utilities (e.g., JWT).
 
+##### **`Tier 5.2: Logic`**
+
 ##### `Routes Service (NestJS)`
 
 -   **Presentation Layer:** Provides REST endpoints and maps incoming requests to application use cases.
@@ -526,13 +592,13 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 -   **Domain Layer:** Defines entities (Route, Segment, etc.) and business rules for route computation.
 -   **Infrastructure Layer:** Handles data persistence and integration with RabbitMQ for asynchronous messaging.
 
-##### **`Distances Service (Python - FastAPI)`**
+##### `Distances Service (Python - FastAPI)`
 
--   **`Interface Layer:` Exposes REST/GraphQL endpoints for distance calculations and metrics.**
--   **`Adapters Layer:` Converts geospatial inputs (e.g., coordinates) into domain formats.**
--   **`Application Layer:` Orchestrates use cases, such as "Calculate Distance" or "Analyze Route Metric".**
--   **`Domain Layer:` Contains the pure business logic and algorithms for geospatial calculations.**
--   **`Infrastructure Layer:` Manages data access (e.g., to `geography-db`) or external map APIs.**
+-   **Interface Layer:** Exposes REST/GraphQL endpoints for distance calculations and metrics.
+-   **Adapters Layer:** Converts geospatial inputs (e.g., coordinates) into domain formats.
+-   **Application Layer:** Orchestrates use cases, such as "Calculate Distance" or "Analyze Route Metric".
+-   **Domain Layer:** Contains the pure business logic and algorithms for geospatial calculations.
+-   **Infrastructure Layer:** Manages data access (e.g., to `geography-db`) or external map APIs.
 
 ##### `Notification Service (Java - Spring)`
 
@@ -545,7 +611,7 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 #### `Layered Architecture`
 
-All services follow a layered design principle separating **presentation**, **application**, **domain**, and **infrastructure** concerns.
+All services follow a layered design principle separating **presentation**, **application**,**domain**, and **infrastructure** concerns.
 This promotes modularity, independent testing, and clear boundaries between logic and technology.
 
 #### `Hexagonal Architecture (Ports and Adapters)`
@@ -566,6 +632,8 @@ This allows scalable and reactive UIs while keeping state management predictable
 ## Decomposition Structure
 
 The **Run Path System** is composed of three main modules operating in a modular and coordinated manner: **User Authentication**, **Routes**, and **Notifications**. Each module performs a distinct role within the platform.
+
+
 
 ### Decomposition View
 
@@ -692,7 +760,7 @@ Manages message composition and delivery:
 #### 3. Detect Service Denial
 
 **Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
 **Associated Pattern:** Web Application Firewall (WAF) Pattern.
 
 ---
@@ -765,354 +833,154 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ## Deployment instructions
 
-This section describes the detailed steps to configure and run the RunPath project locally using Docker containers.
+This section describes the detailed steps to configure and run the RunPath
+project locally using Docker containers.
 
 ### Prerequisites
 
 Make sure you have installed:
 
 - [Git](https://git-scm.com/downloads)
-- [Docker](https://docs.docker.com/get-started/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- [Docker](https://docs.docker.com/get-started/get-docker/) and
+  [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Create the Shared Docker Network
+### Clone repositories
 
-Before starting any service, create the Docker network that will allow communication between containers:
-
-```bash
-docker network create routes_shared_network
-```
-
-> *⚠️ Important:* This network is required for all services to communicate with each other. It must be created before starting any container.
-
----
-
-## 1. Clone the Repositories
-
-Clone all the necessary repositories for the system:
-
-### Distance Calculation Service
+Make the following script executable and run it to clone all necessary
+repositories:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/distance-repository.git
+chmod +x setup_repos.sh
+./setup_repos.sh
 ```
 
-### Route Management Service
+This will clone the following repositories:
+
+- authentication-service
+- routes-service
+- notifications-service
+- frontend-ssr
+- front-mobile
+- runpath-api-gateway
+- distance-repository
+- load-balancer-auth
+- web-reverse-proxy
+- mobile-reverse-proxy
+- logs-service
+
+### Configure environment variables
+
+Make the following script executable and run it to create all necessary `.env`:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/route-service.git
+chmod +x create_envs.sh
+./create_envs.sh
 ```
 
-### Authentication Service
+The `.env` created through this script containe some placeholder values in order
+to keep sensitive information secure. Namely, you need to replace the following
+placeholders with your actual credentials:
+
+**authentication-service:** Firebase ceredentials json and firebase API key.
+
+**frontend-ssr:** Mapbox token.
+
+**notification-service:** Email address and application password for SMTP
+configuration.
+
+**runpath-api-gateway:** Firebase credentials JSON in the specified file.
+
+### Install Openssl certificate
+
+In order for the web frontend to work properly with HTTPS locally, you need to
+install a certificate authority (CA) on your machine and web browsers.
+
+1. Install the `ca.crt` certificate located in the `web-reverse-proxy/certs/`
+   folder as a trusted root certificate authority on your machine and web
+   browser.
+
+### deploy and run the system
+
+Make the following scripts executable, then run the deployment script to build
+and start all Docker containers:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/authentication-service.git
+chmod +x replicate_auth.sh
+chmod +x replicate_front.sh
+chmod +x deploy_runpath.sh
+./deploy_runpath.sh
 ```
 
-### Web Frontend
+Running this scripts will do the following:
+
+- Create the necessary Docker networks, with proper segmentation.
+
+  - public_net
+  - frontend_net
+  - orchestration_net
+  - backend_net
+  - db_net
+
+- Build and start all Docker containers for each component of the system.
+
+  - After creating the containers, the script will replicate the
+    authentication-service and frontend-ssr containers to create multiple
+    instances for load balancing. (2 instances each)
+  - Connect the containers to their respective networks according to the
+    deployment structure.
+
+- Indicate successful deployment and provide access information.
+
+#### Mobile deployment
+
+**Prerequisites:**
+
+- [Android Studio](https://developer.android.com/studio)
+- A physical device or Android emulator
+- Active internet connection
+
+**API configuration:**
+
+For the mobile app to communicate with the backend services, expose the mobile
+reverse proxy using **ngrok**:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/frontend-ssr.git
+ngrok http 8443
 ```
 
-### Notification Service
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/notification-service.git
-```
-
-### Logs Service
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/logs-service.git
-```
-
-### Mobile Frontend
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/front-mobile
-```
-
-### API Gateway
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/runpath-api-gateway.git
-```
-
----
-
-## 2. API Gateway Configuration
-
-### URL available after deployment
-
-*Base API:*
-
-- http://localhost:8888
-
-*APIs:*
-
-- /authApi/
-- /distanceApi/
-- /routesApi/
-- /notificationApi/
-
----
-
-## 3. Authentication Service Configuration
-
-### Firebase Configuration
-
-1. Create a project in [Firebase Console](https://console.firebase.google.com/)
-2. Enable Authentication and Firestore Database
-3. Generate a service key and download the JSON file
-
-### Environment Variables
-
-Go to the repository directory:
-
-```bash
-cd route-service
-```
-
-Create the environment variable file `.env`:
-```bash
-# Linux environment
-touch .env
-```
-
-Set the environment variables in `.env`:
-```env
-FIREBASE_CREDENTIALS_JSON='{"type": "service_account", ...}'
-API_KEY='your_firebase_api_key'
-```
-
-### URLs available after deployment
-
-- *API:* http://localhost:8888/authApi/
-
-- *GraphQL Playground:* http://localhost:8888/authApi/graphql
-
----
-
-## 4. Notification Service Configuration
-
-To access the notification API, make sure to create a `.env` file related to the Google notification API containing the following variables:
-
-```
-- SPRING_MAIL_USERNAME
-- SPRING_MAIL_PASSWORD
-```
-
-This exposes the following topic for the notification API:
-
-- *QUEUE_TOPIC* : notification-queue
-
----
-
-## 5. Distance Calculation Service Configuration
-
-### URL available after deployment
-
-- *API:* http://localhost:8888/distanceApi/
-
----
-
-## 6. Route Management Service Configuration
-
-Go to the repository directory:
-
-```bash
-cd route-service
-```
-
-### Environment Variables
-
-1. Copy the example file:
-
-```bash
-# Linux environment
-cp env.example .env.development
-```
-
-2. Configure the main variables:
-
-```env
-# Database Configuration for Development
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=routes_user
-DB_PASSWORD=routes_password
-DB_NAME=routes_db
-
-# Application Configuration
-PORT=3000
-NODE_ENV=development
-AUTH_SERVICE_JWT_SECRET = SECRET_KEY
-CALCULATION_SERVICE_URL = http://osrm-colombia:5000
-AUTH_SERVICE_URL = http://authentication-service:8000/graphql
-
-# RabbitMQ Configuration
-RABBITMQ_URL=amqp://guest:guest@rabbit:5672
-
-# Exchange Configuration (must match with Spring)
-RABBITMQ_EXCHANGE=notification-exchange
-
-# Exchange Type (topic, direct)
-RABBITMQ_EXCHANGE_TYPE=direct
-
-# Routing Key (must match with Spring)
-RABBITMQ_ROUTING_KEY=notification-routing-key
-
-# Reconnection Configuration
-RABBITMQ_MAX_RECONNECT_ATTEMPTS=5
-RABBITMQ_RECONNECT_DELAY=5000
-```
-
-### URLs available after deployment
-
-- *API:* http://localhost:8888/routesApi/
-- *Swagger Docs:* http://localhost:8888/routesApi/api/docs
-- *Adminer (Admin DB):* http://localhost:8080
-
-### Test Data
-
-When the container is launched for the first time, **8 predefined routes** in Bogotá are automatically loaded to test the functionalities.
-
----
-
-## 7. Web Frontend Configuration
-
-### Environment Variables
-
-Go to the directory:
-
-```bash
-cd frontend-ssr
-```
-
-Create the environment variable file `.env`:
-
-```bash
-# Linux environment
-touch .env
-```
-
-Set the environment variables in `.env`:
-
-```env
-API_GATEWAY=http://api-gateway:8888
-AUTH_SERVICE=authApi/graphql
-DISTANCE_SERVICE=distanceApi/
-ROUTES_SERVICE=routesApi/
-PORT=3001
-NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
-```
-
-### URL available:
-
-- *API:* http://localhost:3001
-
----
-
-## 8. Mobile Frontend Configuration and Deployment
-
-### Prerequisites
-
-Make sure you have installed:
-
-- [Android Studio](https://developer.android.com/studio)  
-- A physical device or Android emulator  
-- Active internet connection  
-
----
-
-### Backend Configuration
-
-For the mobile app to communicate with the local backend, expose the API Gateway using **ngrok**:
-
-```bash
-ngrok http 8888
-```
-
-Copy the URL generated by ngrok (for example: `https://abcd1234.ngrok-free.app`)  
+Copy the URL generated by ngrok (for example:
+`https://abcd1234.ngrok-free.app`)  
 and update it in the mobile app configuration file (utils):
 
 ```env
 API_BASE_URL=https://abcd1234.ngrok-free.app
 ```
 
----
+#### APK Generation and Deployment
 
-### Deployment
-
-1. Open the **front-mobile** project in Android Studio.  
-2. Connect a device or start an emulator.  Optional: Generate an .apk
-3. Run the application using the **Run ▶️** button.  
+1. Open the **front-mobile** project in Android Studio.
+2. Connect a device or start an emulator. Optional: Generate an .apk
+3. Run the application using the **Run ▶️** button.
 
 ---
 
-### URL available after deployment
+Once the deployment is complete, you can access the web frontend at
+`https://localhost` and the mobile frontend by installing the APK.
 
-- *Mobile app running:* on connected Android device or emulator.
+### Verification
 
----
+To verify that the system is running correctly, you can perform the following
+checks:
 
-## 9. Logs Service Configuration
-
-### URL available:
-
-- *Grafana:* http://localhost:3000
-- *Loki:* http://localhost:3100
-- *Promptail:* http://localhost:9080
-
-## 10. Recommended Deployment Order
-
-For a successful deployment, follow this order:
-
-1. *API Gateway Service*
-2. *Authentication Service*
-3. *Notification Service*
-4. *Distance Calculation Service*
-5. *Route Management Service*
-6. *Web Frontend*
-7. *Mobile Frontend*
-8. *Logs Service*
-
-### Full Deployment
-
-From the root directory where the repositories were cloned, run the following commands in order:
-
-```bash
-# 1. API Gateway
-cd runpath-api-gateway && docker compose up --build -d
-# 2. Authentication Service
-cd ../authentication-service && docker compose up --build -d
-# 3. Notification Service
-cd ../notifications-service && docker compose up --build -d
-# 4. Distance Service
-cd ../distance-repository && docker compose up --build -d
-# 5. Route Service
-cd ../route-service && npm run docker:dev
-# 6. Web Frontend
-cd ../frontend-ssr && docker compose up --build -d
-# 7. Logs Service
-cd ../logs-service && docker compose up --build -d
-```
-
----
-
-## 11. Deployment Verification
-
-Once all services are running, verify that they are working correctly.
-
-### Verification Commands
-
-```bash
-# Check container status
-docker ps
-```
-
-### Check logs of a specific service
-```bash
-docker-compose logs -f [service_name]
-```
+1. **Web Frontend Access:** Open a web browser and navigate to
+   `https://localhost`. You should see the RunPath web interface loading without
+   errors.
+2. **Mobile Frontend Access:** Install the generated APK on your Android device
+   or emulator.
+3. **Check container logs**: Check the logs of each Docker container to ensure
+   there are no errors during startup. You can use the following command to view
+   logs:
+   ```bash
+   docker logs <container_name>
+   ```
 
