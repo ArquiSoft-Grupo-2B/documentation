@@ -1017,8 +1017,8 @@ While a single user request yields the following average metrics:
 
 ### Scenario 1 – Authentication Service Performance
 
-- **Source:** 100 legitimate users attempting to log into the system.
-- **Stimulus:** 1100 login requests are sent within one second.
+- **Source:** 110 legitimate users attempting to access the system.
+- **Stimulus:** 440 requests are sent within one second.
 - **Artifact:** The runpath-login component.
 - **Enviroment:** Normal operation under high request traffic.
 - **Response:** The system processes all authentication requests successfully.
