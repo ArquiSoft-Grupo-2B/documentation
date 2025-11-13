@@ -406,8 +406,8 @@ The pattern protects the web frontend component from potential Denial of Service
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
 
-   - **load-balance-auth**
-     *Deployed Component:* `load-balance-auth`
+   - **load-balance-auth**  
+     *Deployed Component:* `load-balance-auth`  
      *Description:* Distributed traffic from authentication requests between the computations available for the service.
    
    - **ngin-tls-gateway**  
@@ -429,6 +429,11 @@ The pattern protects the web frontend component from potential Denial of Service
 4. **frontend_net (172.27.0.0/16):** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
 6. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
 
+### Architectural Patterns
+
+#### Network Segmentation Pattern
+
+The RunPath System applies the Network Segmentation Pattern. Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations. The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
 
 ## Layered Structure
 
