@@ -3,7 +3,6 @@
 </p>
 <h2 align="center"><small>Prototype 3</small></br> <big>RunPath</big></br>Team 2B</h2>
 
----
 
 # Team
 
