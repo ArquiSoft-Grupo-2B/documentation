@@ -1049,7 +1049,7 @@ While a single user request yields the following average metrics:
 
 **Description:** This tactic aims to improve system performance through horizontal scaling, creating identical copies of the same node to distribute processing load and reduce average response time.
 **Application:** It is applied in the deployment of containers, where multiple instances of the runpath-web-frontend and runpath-login components are executed. This allows requests to be distributed among replicas of each service, optimizing overall performance.  
-**Associated Pattern:** Load Balancer Pattern.
+**Associated Pattern:** Load Balancer Pattern, Service Replication Pattern.
 
 ---
 
@@ -1061,6 +1061,14 @@ The RunPath System applies the Load Balancer Pattern.
 In the system, the component that serves as both reverse proxy and WAF for runpath-web-frontend also integrates load balancing functionality, determining which instance should receive incoming requests based on its current capacity.
 Similarly, a dedicated load balancer component is implemented for runpath-login, receiving requests from the API Gateway and distributing them across available instances according to their workload.
 This pattern ensures efficient horizontal scalability, enhancing response time and performance of the associated components.
+
+
+#### 2. Service Replication Pattern
+
+The RunPath System applies the Service Replication Pattern.  
+This pattern involves deploying multiple identical instances of key services or components, allowing requests to be processed in parallel and reducing the load on individual nodes.  
+In the system, both *runpath-web-frontend* and *runpath-login* are replicated into several instances, enabling the load balancers to distribute requests dynamically.  
+This replication increases the system’s throughput, fault tolerance, and overall performance under high-demand conditions.
 
 ---
 
