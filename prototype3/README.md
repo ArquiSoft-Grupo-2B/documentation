@@ -93,7 +93,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 
 ---
 
-#### `web-proxy-waf`
+#### `load-balancer-web-proxy-waf`
 - **Technology:** nginx
 - **Description:** Acts as a reverse proxy and Web Application Firewall (WAF). It exposes a public endpoint for web access, masks the location and address of the web frontend, API Gateway, and backend services from web users, and provides a boundary for incoming requests to mitigate potential DoS attacks.
 
@@ -118,7 +118,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 | `runpath-notifications-queue` | RabbitMQ | Asynchronous message queue between routes and notifications. | Receives events from `runpath-routes` and distributes them to `runpath-notifications`. |
 | `API Gateway` | Express Gateway | Backend entry point; manages authentication and routes requests. | Connects mobile reverse proxy and web frontend with all backend microservices. |
 | `mobile-reverse-proxy` | Nginx | Public entry point for mobile users. Masks the API Gateway to mobile users. | Redirects the request from mobile frontend to the API Gateway. |
-| `web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
+| `load-balancer-web-proxy-waf` | Nginx | Public entry point for web users. Masks the web frontend and limits incoming requests. | Redirects the requests from web brower to web frontend and stops potential DoS attacks. |
 | `load-balance-auth` | Nginx | Distribute the authentication requests between the authentication-containers | Redirects the requests from API Gateway to the authentication service |
 
 ### Connector Description
@@ -174,10 +174,10 @@ Available both on the web and as a mobile application, RunPath provides a simple
    - **Description:** Allows the web interface to interact with the system's microservices through the gateway.
 
 2. **HTTP Connector with Reverse Proxy and Waf**
-   - **Components:** runpath-frontend (Next.js) ↔ web-proxy-waf (Nginx)
+   - **Components:** runpath-frontend (Next.js) ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client → Server, Synchronous Request/Response
-   - **Description:** Enables communication with the web-proxy-waf component, acting as an intermediary between web frontend and web client.
+   - **Description:** Enables communication with the load-balancer-web-proxy-waf component, acting as an intermediary between web frontend and web client.
 
 3. **HTTP Connector with Reverse Proxy (Mobile)**
    - **Components:** runpath-mobile (Kotlin) ↔ mobile-reverse-proxy (Nginx)
@@ -220,12 +220,12 @@ Available both on the web and as a mobile application, RunPath provides a simple
 #### Security componentes connectors
 
 1. **HTTP Connector with web frontend**
-   - **Components:** web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ runpath-frontend (Next.js)
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
 2. **HTTP Connector with web client**
-   - **Components:** web-proxy-waf (Nginx) ↔ web client
+   - **Components:** load-balancer-web-proxy-waf (Nginx) ↔ web client
    - **Protocol:** HTTP
    - **Communication:** Bidirectional, Synchronous Request/Response
 
@@ -269,7 +269,7 @@ Available both on the web and as a mobile application, RunPath provides a simple
 ##### Web Client Connectors
 
 1. **HTTP Connector with the SSR Presentation Component**
-   - **Components:** Web Browser ↔ web-proxy-waf (Nginx)
+   - **Components:** Web Browser ↔ load-balancer-web-proxy-waf (Nginx)
    - **Protocol:** HTTP
    - **Communication:** Client→Server, Synchronous Request/Response
 
@@ -399,7 +399,7 @@ The pattern protects the web frontend component from potential Denial of Service
      *Description:* Mobile reverse proxy (Nginx), intermediary between mobile frontend component and API Gateway.
    
    - **reverse-proxy**  
-     *Deployed Component:* `web-proxy-waf`  
+     *Deployed Component:* `load-balancer-web-proxy-waf`  
      *Description:* Web reverse proxy and waf (Nginx), intermediary between web frontend component and web client.
 
    - **loki, promtail, grafana**  
@@ -445,7 +445,7 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ##### `**Tier 1 — Edge/Security**`
 
--   **`web-proxy-waf (Nginx)`: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).**
+-   **`load-balancer-web-proxy-waf (Nginx)`: Acts as a reverse proxy and Web Application Firewall (WAF) for the web client. It exposes the public endpoint, masks the web frontend, and mitigates attacks (e.g., DoS).**
 -   **`mobile-reverse-proxy (Nginx)`: Exposes a public endpoint for the mobile interface. It masks direct access to the API Gateway and redirects traffic from the mobile client.**
 
 ##### `Tier 2 — Orchestration`
@@ -475,7 +475,7 @@ The pattern protects the web frontend component from potential Denial of Service
 
 #### Relationships description
 
--   **`Web Flow:` `Tier 1 (web-proxy-waf)` receives requests from the web client and serves/protects `Tier 0 (Frontend Web)`. `Tier 0 (Frontend Web)` in turn consumes data from `Tier 2 (API Gateway)`.**
+-   **`Web Flow:` `Tier 1 (load-balancer-web-proxy-waf)` receives requests from the web client and serves/protects `Tier 0 (Frontend Web)`. `Tier 0 (Frontend Web)` in turn consumes data from `Tier 2 (API Gateway)`.**
 -   **`Mobile Flow:` `Tier 0 (Frontend Mobile)` communicates with `Tier 1 (mobile-reverse-proxy)`. This proxy securely forwards requests to `Tier 2 (API Gateway)`.**
 -   **`Backend Flow:` `Tier 2 (Orchestration)` routes requests to the appropriate microservices in `Tier 3 (Logic)`.**
 -   **`Data Flow:` `Tier 3 (Logic)` services access their data stores in `Tier 5 (Data)`.**
@@ -494,7 +494,7 @@ Clear separation into **Edge/Security, Presentation, Orchestration, Logic, Data*
 
 ##### **`WAF Pattern`**
 
-**Applied at the `web-proxy-waf` (Tier 1) to establish a boundary on incoming requests and protect the web frontend from common attacks like DoS.**
+**Applied at the `load-balancer-web-proxy-waf` (Tier 1) to establish a boundary on incoming requests and protect the web frontend from common attacks like DoS.**
 
 ##### `Local Cache + Sync`
 
@@ -530,7 +530,7 @@ logs-db (Loki) indicates centralized log collection for monitoring, tracing and 
 
 #### **`Edge/Security Layers`**
 
-##### **`web-proxy-waf (Nginx)`**
+##### **`load-balancer-web-proxy-waf (Nginx)`**
 
 -   **`Layer 1: Reverse Proxy:` Forwards HTTP/HTTPS requests to the `Frontend Web` component.**
 -   **`Layer 2: WAF Ruleset:` Applies firewall rules (e.g., rate limiting) to filter malicious traffic.**
@@ -741,7 +741,7 @@ It is important to consider that we cannot ensure the following elements, howeve
 #### **3. Detect Service Denial**
 
 **Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (load-balancer-web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
 **Associated Pattern:** Web Application Firewall (WAF) Pattern.
 
 ### Architectural patterns applied
