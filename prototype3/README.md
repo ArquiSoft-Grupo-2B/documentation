@@ -812,354 +812,154 @@ The pattern protects the web frontend component from potential Denial of Service
 
 ## Deployment instructions
 
-This section describes the detailed steps to configure and run the RunPath project locally using Docker containers.
+This section describes the detailed steps to configure and run the RunPath
+project locally using Docker containers.
 
 ### Prerequisites
 
 Make sure you have installed:
 
 - [Git](https://git-scm.com/downloads)
-- [Docker](https://docs.docker.com/get-started/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- [Docker](https://docs.docker.com/get-started/get-docker/) and
+  [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Create the Shared Docker Network
+### Clone repositories
 
-Before starting any service, create the Docker network that will allow communication between containers:
-
-```bash
-docker network create routes_shared_network
-```
-
-> *⚠️ Important:* This network is required for all services to communicate with each other. It must be created before starting any container.
-
----
-
-## 1. Clone the Repositories
-
-Clone all the necessary repositories for the system:
-
-### Distance Calculation Service
+Make the following script executable and run it to clone all necessary
+repositories:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/distance-repository.git
+chmod +x setup_repos.sh
+./setup_repos.sh
 ```
 
-### Route Management Service
+This will clone the following repositories:
+
+- authentication-service
+- routes-service
+- notifications-service
+- frontend-ssr
+- front-mobile
+- runpath-api-gateway
+- distance-repository
+- load-balancer-auth
+- web-reverse-proxy
+- mobile-reverse-proxy
+- logs-service
+
+### Configure environment variables
+
+Make the following script executable and run it to create all necessary `.env`:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/route-service.git
+chmod +x create_envs.sh
+./create_envs.sh
 ```
 
-### Authentication Service
+The `.env` created through this script containe some placeholder values in order
+to keep sensitive information secure. Namely, you need to replace the following
+placeholders with your actual credentials:
+
+**authentication-service:** Firebase ceredentials json and firebase API key.
+
+**frontend-ssr:** Mapbox token.
+
+**notification-service:** Email address and application password for SMTP
+configuration.
+
+**runpath-api-gateway:** Firebase credentials JSON in the specified file.
+
+### Install Openssl certificate
+
+In order for the web frontend to work properly with HTTPS locally, you need to
+install a certificate authority (CA) on your machine and web browsers.
+
+1. Install the `ca.crt` certificate located in the `web-reverse-proxy/certs/`
+   folder as a trusted root certificate authority on your machine and web
+   browser.
+
+### deploy and run the system
+
+Make the following scripts executable, then run the deployment script to build
+and start all Docker containers:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/authentication-service.git
+chmod +x replicate_auth.sh
+chmod +x replicate_front.sh
+chmod +x deploy_runpath.sh
+./deploy_runpath.sh
 ```
 
-### Web Frontend
+Running this scripts will do the following:
+
+- Create the necessary Docker networks, with proper segmentation.
+
+  - public_net
+  - frontend_net
+  - orchestration_net
+  - backend_net
+  - db_net
+
+- Build and start all Docker containers for each component of the system.
+
+  - After creating the containers, the script will replicate the
+    authentication-service and frontend-ssr containers to create multiple
+    instances for load balancing. (2 instances each)
+  - Connect the containers to their respective networks according to the
+    deployment structure.
+
+- Indicate successful deployment and provide access information.
+
+#### Mobile deployment
+
+**Prerequisites:**
+
+- [Android Studio](https://developer.android.com/studio)
+- A physical device or Android emulator
+- Active internet connection
+
+**API configuration:**
+
+For the mobile app to communicate with the backend services, expose the mobile
+reverse proxy using **ngrok**:
 
 ```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/frontend-ssr.git
+ngrok http 8443
 ```
 
-### Notification Service
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/notification-service.git
-```
-
-### Logs Service
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/logs-service.git
-```
-
-### Mobile Frontend
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/front-mobile
-```
-
-### API Gateway
-
-```bash
-git clone https://github.com/ArquiSoft-Grupo-2B/runpath-api-gateway.git
-```
-
----
-
-## 2. API Gateway Configuration
-
-### URL available after deployment
-
-*Base API:*
-
-- http://localhost:8888
-
-*APIs:*
-
-- /authApi/
-- /distanceApi/
-- /routesApi/
-- /notificationApi/
-
----
-
-## 3. Authentication Service Configuration
-
-### Firebase Configuration
-
-1. Create a project in [Firebase Console](https://console.firebase.google.com/)
-2. Enable Authentication and Firestore Database
-3. Generate a service key and download the JSON file
-
-### Environment Variables
-
-Go to the repository directory:
-
-```bash
-cd route-service
-```
-
-Create the environment variable file `.env`:
-```bash
-# Linux environment
-touch .env
-```
-
-Set the environment variables in `.env`:
-```env
-FIREBASE_CREDENTIALS_JSON='{"type": "service_account", ...}'
-API_KEY='your_firebase_api_key'
-```
-
-### URLs available after deployment
-
-- *API:* http://localhost:8888/authApi/
-
-- *GraphQL Playground:* http://localhost:8888/authApi/graphql
-
----
-
-## 4. Notification Service Configuration
-
-To access the notification API, make sure to create a `.env` file related to the Google notification API containing the following variables:
-
-```
-- SPRING_MAIL_USERNAME
-- SPRING_MAIL_PASSWORD
-```
-
-This exposes the following topic for the notification API:
-
-- *QUEUE_TOPIC* : notification-queue
-
----
-
-## 5. Distance Calculation Service Configuration
-
-### URL available after deployment
-
-- *API:* http://localhost:8888/distanceApi/
-
----
-
-## 6. Route Management Service Configuration
-
-Go to the repository directory:
-
-```bash
-cd route-service
-```
-
-### Environment Variables
-
-1. Copy the example file:
-
-```bash
-# Linux environment
-cp env.example .env.development
-```
-
-2. Configure the main variables:
-
-```env
-# Database Configuration for Development
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=routes_user
-DB_PASSWORD=routes_password
-DB_NAME=routes_db
-
-# Application Configuration
-PORT=3000
-NODE_ENV=development
-AUTH_SERVICE_JWT_SECRET = SECRET_KEY
-CALCULATION_SERVICE_URL = http://osrm-colombia:5000
-AUTH_SERVICE_URL = http://authentication-service:8000/graphql
-
-# RabbitMQ Configuration
-RABBITMQ_URL=amqp://guest:guest@rabbit:5672
-
-# Exchange Configuration (must match with Spring)
-RABBITMQ_EXCHANGE=notification-exchange
-
-# Exchange Type (topic, direct)
-RABBITMQ_EXCHANGE_TYPE=direct
-
-# Routing Key (must match with Spring)
-RABBITMQ_ROUTING_KEY=notification-routing-key
-
-# Reconnection Configuration
-RABBITMQ_MAX_RECONNECT_ATTEMPTS=5
-RABBITMQ_RECONNECT_DELAY=5000
-```
-
-### URLs available after deployment
-
-- *API:* http://localhost:8888/routesApi/
-- *Swagger Docs:* http://localhost:8888/routesApi/api/docs
-- *Adminer (Admin DB):* http://localhost:8080
-
-### Test Data
-
-When the container is launched for the first time, **8 predefined routes** in Bogotá are automatically loaded to test the functionalities.
-
----
-
-## 7. Web Frontend Configuration
-
-### Environment Variables
-
-Go to the directory:
-
-```bash
-cd frontend-ssr
-```
-
-Create the environment variable file `.env`:
-
-```bash
-# Linux environment
-touch .env
-```
-
-Set the environment variables in `.env`:
-
-```env
-API_GATEWAY=http://api-gateway:8888
-AUTH_SERVICE=authApi/graphql
-DISTANCE_SERVICE=distanceApi/
-ROUTES_SERVICE=routesApi/
-PORT=3001
-NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
-```
-
-### URL available:
-
-- *API:* http://localhost:3001
-
----
-
-## 8. Mobile Frontend Configuration and Deployment
-
-### Prerequisites
-
-Make sure you have installed:
-
-- [Android Studio](https://developer.android.com/studio)  
-- A physical device or Android emulator  
-- Active internet connection  
-
----
-
-### Backend Configuration
-
-For the mobile app to communicate with the local backend, expose the API Gateway using **ngrok**:
-
-```bash
-ngrok http 8888
-```
-
-Copy the URL generated by ngrok (for example: `https://abcd1234.ngrok-free.app`)  
+Copy the URL generated by ngrok (for example:
+`https://abcd1234.ngrok-free.app`)  
 and update it in the mobile app configuration file (utils):
 
 ```env
 API_BASE_URL=https://abcd1234.ngrok-free.app
 ```
 
----
+#### APK Generation and Deployment
 
-### Deployment
-
-1. Open the **front-mobile** project in Android Studio.  
-2. Connect a device or start an emulator.  Optional: Generate an .apk
-3. Run the application using the **Run ▶️** button.  
+1. Open the **front-mobile** project in Android Studio.
+2. Connect a device or start an emulator. Optional: Generate an .apk
+3. Run the application using the **Run ▶️** button.
 
 ---
 
-### URL available after deployment
+Once the deployment is complete, you can access the web frontend at
+`https://localhost` and the mobile frontend by installing the APK.
 
-- *Mobile app running:* on connected Android device or emulator.
+### Verification
 
----
+To verify that the system is running correctly, you can perform the following
+checks:
 
-## 9. Logs Service Configuration
-
-### URL available:
-
-- *Grafana:* http://localhost:3000
-- *Loki:* http://localhost:3100
-- *Promptail:* http://localhost:9080
-
-## 10. Recommended Deployment Order
-
-For a successful deployment, follow this order:
-
-1. *API Gateway Service*
-2. *Authentication Service*
-3. *Notification Service*
-4. *Distance Calculation Service*
-5. *Route Management Service*
-6. *Web Frontend*
-7. *Mobile Frontend*
-8. *Logs Service*
-
-### Full Deployment
-
-From the root directory where the repositories were cloned, run the following commands in order:
-
-```bash
-# 1. API Gateway
-cd runpath-api-gateway && docker compose up --build -d
-# 2. Authentication Service
-cd ../authentication-service && docker compose up --build -d
-# 3. Notification Service
-cd ../notifications-service && docker compose up --build -d
-# 4. Distance Service
-cd ../distance-repository && docker compose up --build -d
-# 5. Route Service
-cd ../route-service && npm run docker:dev
-# 6. Web Frontend
-cd ../frontend-ssr && docker compose up --build -d
-# 7. Logs Service
-cd ../logs-service && docker compose up --build -d
-```
-
----
-
-## 11. Deployment Verification
-
-Once all services are running, verify that they are working correctly.
-
-### Verification Commands
-
-```bash
-# Check container status
-docker ps
-```
-
-### Check logs of a specific service
-```bash
-docker-compose logs -f [service_name]
-```
+1. **Web Frontend Access:** Open a web browser and navigate to
+   `https://localhost`. You should see the RunPath web interface loading without
+   errors.
+2. **Mobile Frontend Access:** Install the generated APK on your Android device
+   or emulator.
+3. **Check container logs**: Check the logs of each Docker container to ensure
+   there are no errors during startup. You can use the following command to view
+   logs:
+   ```bash
+   docker logs <container_name>
+   ```
 
