@@ -341,8 +341,8 @@ The pattern protects the web frontend component from potential Denial of Service
    - Communicates securely with the API Gateway over HTTPS to access backend services.
    - Supports offline operations and periodic synchronization with central services.
 
-2. **Server (routes_shared_network)**
-   - Virtual host containing multiple Docker containers representing backend microservices and supporting components.
+2. **Server**
+   - Host containing multiple Docker containers representing backend microservices and supporting components.
    - Containers communicate internally through a shared virtual network for isolation and controlled inter-service access.
 
    **Contained Elements:**
@@ -350,7 +350,15 @@ The pattern protects the web frontend component from potential Denial of Service
      *Deployed Component:* `runpath-distance`  
      *Description:* Computes distances and geospatial metrics using OSRM, communicating with the Routes Service via the API Gateway.
 
-   - **authentication-service**  
+   - **authentication-service** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-1** 
+     *Deployed Component:* `runpath-login`  
+     *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
+
+   - **authentication-service-2** 
      *Deployed Component:* `runpath-login`  
      *Description:* Handles user authentication and session management; integrates with Firebase for identity services.
 
@@ -377,6 +385,14 @@ The pattern protects the web frontend component from potential Denial of Service
    - **runpath_frontend**  
      *Deployed Component:* `runpath-web-frontend-ssr`  
      *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-1**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
+
+   - **frontend-ssr-2**  
+     *Deployed Component:* `runpath-web-frontend-ssr`  
+     *Description:* Web frontend (Next.js SSR) providing user interfaces for browsing and managing routes.
    
    - **mobile_nginx**  
      *Deployed Component:* `mobile-reverse-proxy`  
@@ -389,6 +405,10 @@ The pattern protects the web frontend component from potential Denial of Service
    - **loki, promtail, grafana**  
      *Deployed Component:* Observability stack  
      *Description:* Aggregates logs and metrics; provides monitoring dashboards and runtime diagnostics for all containers.
+
+   - **load-balance-auth**
+     *Deployed Component:* `load-balance-auth`
+     *Description:* Distributed traffic from authentication requests between the computations available for the service.
    
    - **ngin-tls-gateway**  
      *Deployed Component:* TLS stack  
@@ -403,11 +423,11 @@ The pattern protects the web frontend component from potential Denial of Service
 
 #### Network Schema
 
-1. **db_net:** Private network dedicated to data management. Contains data components and services that exchange and manage information.
-2. **backend_net:** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
-3. **orchestration_net:** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
-4. **frontend_net:** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
-6. **public_net:** Public network that contains the reverse proxies, allowing public access only to these components.
+1. **db_net (172.30.0.0/16):** Private network dedicated to data management. Contains data components and services that exchange and manage information.
+2. **backend_net (172.28.0.0/16):** Private network dedicated to handling service requests. Contains backend services and the API Gateway to enable the exchange of service requests and responses.
+3. **orchestration_net (172.29.0.0/16):** Private network dedicated to managing the redirection of requests between entry points and the API Gateway. Contains the web frontend, API Gateway, and mobile reverse proxy.
+4. **frontend_net (172.27.0.0/16):** Private network dedicated to enabling the exchange of requests between the web frontend component and the web reverse proxy.
+6. **public_net (172.26.0.0/16):** Public network that contains the reverse proxies, allowing public access only to these components.
 
 
 ## Layered Structure
