@@ -939,7 +939,7 @@ The hardware specifications of the nodes used for testing were as follows:
 **Hardware arrangement 2:**
 
 - server node:
-  - **CPU:** Intel Core i5-10400F
+  - **CPU:** AMD Ryzen 5 5600H
   - **RAM:** 8 GB DDR4 3600 MHz
   - **Storage:** 120 GB SSD
   - **OS:** Linux Ubuntu 20.04 LTS
