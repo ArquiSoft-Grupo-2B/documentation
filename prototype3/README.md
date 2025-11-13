@@ -872,7 +872,50 @@ This pattern ensures efficient horizontal scalability, enhancing response time a
 
 ### Performance testing analysis and results
 
-# Prototype
+A set of performance and stress tests were conducted using the **Jmeter** tool
+to evaluate the system's behavior under various load conditions. The tests
+focused on key performance indicators such as response time, throughput, and
+error rates for critical endpoints and flows of the application.
+
+For the tests, the software system was deployed locally in a single dedicated
+node, and connected via LAN to another node that simulated multiple concurrent
+users sending requests to the system through Jmeter.
+
+#### Hardware specifications
+
+The hardware specifications of the nodes used for testing were as follows:
+
+**Hardware arrangement 1:**
+
+- server node:
+  - **CPU:** AMD Ryzen 5 4600H
+  - **RAM:** 12 GB DDR4 3200 MHz
+  - **Storage:** 250 GB SSD, 1TB HDD
+  - **OS:** Windows 11 Home
+- cliente node:
+  - **CPU:** Intel Core i5-8250U
+  - **RAM:** 8 GB DDR4 2400 MHz
+  - **Storage:** 500 GB SSD
+  - **OS:** Linux Mint 20.3
+
+**Hardware arrangement 2:**
+
+- server node:
+  - **CPU:** Intel Core i5-10400F
+  - **RAM:** 8 GB DDR4 3600 MHz
+  - **Storage:** 120 GB SSD
+  - **OS:** Linux Ubuntu 20.04 LTS
+- client node:
+  - **CPU:** AMD Ryzen 5 3500U
+  - **RAM:** 8 GB DDR4 3200 MHz
+  - **Storage:** 512 GB SSD
+  - **OS:** Windows 11 Home
+
+The client connected to the server via a low traffic LAN network. 
+
+#### Test plan
+
+A test plan was designed to simulate a normal user flow under varying load. The results are as follows:
 
 ## Deployment instructions
 
