@@ -974,7 +974,7 @@ While a single user request yields the following average metrics:
 
 **Hardware arrangement 2:**
 
-![performance curve 2](./imgs/performance/Performance%20Curve%202.png)
+![performance curve 2](./imgs/performance/Performance%20curve%202.png)
 
 The system operates under optimal response times until reaching approximately 100 concurrent users in one second. Beyond this point, response times begin to increase significantly. Therefore the knee in the performance curve is around 100 users/second. Around this workload, the system yields the following average metrics, considering the destionation of requests:
 
