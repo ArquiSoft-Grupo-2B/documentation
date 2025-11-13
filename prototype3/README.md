@@ -616,7 +616,127 @@ Manages message composition and delivery:
 
 ## Security
 
-### Scenario #1 - Unauthorized Interception and Network Link Compromise
+### Scenario 1 – Unauthorized Interception and Network Link Compromise
+* **Source:** Any malicious actor attempting to intercept or alter the communication between the web client and the system.
+* **Stimulus:** Attempts to perform sniffing or man-in-the-middle attacks during information exchange with the web frontend.
+* **Artifact:** Communication channel between the web client and the frontend component.
+* **Enviroment:** Normal operation.
+* **Response:** The system protects the exchanged information and verifies the authenticity of the communicating parties.
+* **Response measure:** Intercepted data is unreadable and unusable, and any modification is detected and rejected.
+
+<p align="center">
+<img src="./imgs/scenario1_linkcompromise.png">
+</p>
+
+---
+
+### Scenario 2 – Unauthorized Access to Private Components
+
+* **Source:** Any malicious actor or automated scanner operating from the Internet.
+* **Stimulus:** Attempts to directly communicate with sensitive system components (backend, orchestration, etc.).
+* **Artifact:** Critical system components.
+* **Enviroment:** Normal operation.
+* **Response:** The system rejects direct requests to sensitive components and only allows access through authorized public entry points.
+* **Response measure:** Unauthorized access attempts are rejected, and information about internal components remains concealed.
+
+<p align="center">
+<img src="./imgs/scenario2_unauthorizedaccess.png">
+</p>
+
+---
+
+### Scenario 3 – Public Exposure of Critical Components
+
+* **Source:** Internal or external attacker who has obtained initial access to a low-value public part of the system.
+* **Stimulus:** The attacker attempts lateral movement to access other sensitive components (databases, services, etc.).
+* **Artifact:** Critical system components.
+* **Enviroment:** After compromise of a low-value public part of the system.
+* **Response:** The system maintains access separation among components, preventing unauthorized access to internal resources.
+* **Response measure:** Attempts to send network requests to other components are blocked, and the targeted resources remain inaccessible and protected.
+
+<p align="center">
+<img src="./imgs/scenario3_publicexposure.png">
+</p>
+
+---
+
+### Scenario 4 – Service Degradation or Denial Due to Excessive Traffic
+
+* **Source:** Attacker or automated botnet attempting to degrade the system’s availability.
+* **Stimulus:** Sending an excessive volume of requests to the frontend in order to saturate its processing capacity.
+* **Artifact:** The runpath-web-frontend component and its public entry point.
+* **Enviroment:** Normal operation under high request traffic.
+* **Response:** The system detects abnormal behavior and blocks the source of the excessive requests.
+* **Response measure:** Requests from the same IP address are blocked when exceeding a threshold of five requests per second.
+
+<p align="center">
+<img src="./imgs/scenario4_servicedegradation.png">
+</p>
+
+---
+
+### Architectural tactics applied
+
+#### 1. Encrypt Data
+
+**Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
+**Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
+**Associated Pattern:** Secure Channel Pattern.
+
+#### 2. Limit Access
+
+**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
+**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
+**Associated Pattern:** Reverse Proxy Pattern.
+
+#### 3. Detect Service Denial
+
+**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
+**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
+**Associated Pattern:** Web Application Firewall (WAF) Pattern.
+
+---
+
+### Architectural patterns applied
+
+#### 1. Secure Channel Pattern
+
+The RunPath System applies the Secure Channel Pattern.
+This is evidenced by the connector provided for the web frontend, ensuring that all messages are exchanged through the HTTPS protocol, which encrypts and validates all requests and responses.
+The pattern protects user credentials and sensitive information from potential attackers eavesdropping on the communication channel.
+
+#### 2. Reverse Proxy Pattern
+
+The RunPath System applies the Reverse Proxy Pattern.
+In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
+The pattern protects the system from attempts to scan or attack internal services.
+
+#### 3. Network Segmentation Pattern
+
+The RunPath System applies the Network Segmentation Pattern.
+Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
+The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
+
+#### 4. Web Application Firewall (WAF) Pattern
+The RunPath System applies the Web Application Firewall (WAF) Pattern.
+The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
+The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
+
+---
+
+### Relationship Between Applied Patterns and Scenarios
+
+| **Scenario** | **Pattern** | **Explanation** |
+|---------------|-------------|-----------------|
+| Scenario 1 – Unauthorized Interception and Network Link Compromise | Secure Channel Pattern | Ensures all communications between the client and the frontend are encrypted and authenticated, preserving data confidentiality and integrity. |
+| Scenario 2 – Unauthorized Access to Private Components | Reverse Proxy Pattern | Filters and controls all inbound traffic, exposing only authorized public endpoints while masking internal components and network structure. |
+| Scenario 3 – Public Exposure of Critical Components | Network Segmentation Pattern | Separates the system into isolated network zones, preventing lateral movement and unauthorized access to sensitive backend services. |
+| Scenario 4 – Service Degradation or Denial Due to Excessive Traffic | Web Application Firewall (WAF) Pattern | Monitors and limits request rates, blocking suspicious or excessive traffic to maintain system availability against DoS attacks. |
+
+
+## Performance and Scalability
+
+### Scenario #1 - Frontend Performance
 
 * **Source:** Any malicious actor attempting to intercept or alter communications between the web client and the system.
 * **Stimulus:** Attempts to perform a network sniffing or Man-in-the-Middle (MitM) while a user exchanges information with the web frontend.
@@ -632,105 +752,6 @@ Manages message composition and delivery:
 </p>
 
 ---
-
-### Scenario #2 - Unauthorized Access to Private Components
-
-* **Source:** Any external malicious actor or automated scanner operating from the public internet.
-* **Stimulus:** Attempts to directly reach backend or orchestration services by bypassing the public interfaces of the system.
-* **Artifact:** The Private/Critical Components.
-* **Enviroment:** Normal operation with high volume of traffic requests.
-* **Response:** Reverse proxies mediate all incoming HTTP requests directed to the system, exposing only approved endpoints and to forward requests exclusively to their mapped services.
-* **Response measure:**
-    * **Access Control:** All unauthorized attempts to access or bypass the proxy to reach a private component are blocked.
-    * **Non-Repudiation (Server Anonymity):** Attackers cannot infer private IP addresses or service configurations behind the proxy, limiting reconnaissance opportunities.
-
-<p align="center">
-<img src="./imgs/scenario2_unauthorizedaccess.png">
-</p>
-
----
-
-### Scenario #3 - Public Exposure of Critical Components
-
-* **Source:** An internal or external attacker who has already successfully gained initial access/a foothold on one part of the network.
-* **Stimulus:** The attacker attempts lateral movement to reach internal assets, such as databases or sensitive backend services.
-* **Artifact:** The Internal Network Segments (specifically, the target segment)
-* **Enviroment:** Post-compromise of a low-value asset in a public segment.
-* **Response:** The deployment enforces network segmentation through distinct subnets and routing domains. Only explicitly defined connections are permitted between subnets, preventing unsolicited or cross-segment traffic.
-* **Response measure:** 
-It is important to consider that we cannot ensure the following elements, however, the response helps with the mitigation of them.
-   * **Containment:** The attacker's attempt to send packets to the sensitive private segment is rejected by the routing/switching infrastructure at the subnet boundary.
-   * **Confidentiality/Integrity:** The high-value assets in the private subnet remain inaccessible and uncompromised, preventing widespread damage following a localized breach.
-
-<p align="center">
-<img src="./imgs/scenario3_publicexposure.png">
-</p>
-
----
-
-### Scenario #4 - Service Degradation or Denial Due to Excessive Traffic
-
-* **Source:** An attacker or automated botnet attempting to degrade or halt application service availability.
-* **Stimulus:** Submits an overwhelming volume of requests to the web frontend to exhaust its processing capacity.
-* **Artifact:** The runpath-web-frontend component and its public endpoint.
-* **Enviroment:** Normal operation, handling legitimate HTTP/S requests alongside a surge of malicious traffic.
-* **Response:** The Web Application Firewall (WAF) analyzes the traffic flow for behavioral anomalies, such as request rates exceeding established thresholds from a single source or IP range. It then applies rate limiting and/or connection throttling to the abusive traffic pattern and drops the offending requests.
-* **Response measure:**
-    * **Availability (Service Denial Prevention):** The WAF sustains the service's availability for legitimate users by shedding the malicious load.
-    * **Throughput/Latency:** The rate of processing for legitimate requests is maintained above a critical threshold, and latency remains within acceptable bounds, despite the attack.
-
-<p align="center">
-<img src="./imgs/scenario4_servicedegradation.png">
-</p>
-
-### Architectural tactics applied
-
-#### **1. Encrypt Data**
-
-**Description:** This tactic aims to protect the confidentiality and integrity of data in transit through end-to-end encryption, entity authentication, and message integrity verification (e.g., TLS with certificates and MAC mechanisms).
-**Application:** It is applied on the public channel between the web browser and the runpath-web-frontend component, ensuring that all HTTP requests are negotiated as HTTPS (TLS). Operational evidence includes valid digital certificates on the frontend and TLS negotiation on public ports.
-**Associated Pattern:** Secure Channel Pattern.
-
-#### **2. Limit Access**
-
-**Description:** This tactic focuses on minimizing the attack surface and controlling access to internal resources through intermediaries and filtering policies, minimizing endpoint exposure, enforcing strict routing rules, hiding metadata, and blocking unauthorized traffic before it reaches internal services.
-**Application:** It is implemented at public entry points (the reverse proxies serving the web and mobile frontends). These proxies enforce routing rules, ACLs, and filters that only allow explicitly authorized traffic toward mapped services, while hiding internal addresses and headers. It is also visible in inter-subnet access rules that restrict which entities can invoke services within backend_net and orchestration_net.
-**Associated Pattern:** Reverse Proxy Pattern.
-
-#### **3. Detect Service Denial**
-
-**Description:** This tactic aims to detect and mitigate service degradation attempts by performing real-time traffic analysis (detecting bursts, suspicious IPs, and anomalous request patterns) and applying automated countermeasures such as rate limiting, connection throttling, temporary blocking, and challenge-response mechanisms. The goal is to preserve availability for legitimate users while filtering out malicious load.
-**Application:** It is implemented in the WAF layer integrated into the inbound proxy for the web frontend (web-proxy-waf), where request-rate metrics and attack signatures are continuously monitored. Mitigation policies are executed at this layer before traffic reaches runpath-web-frontend.
-**Associated Pattern:** Web Application Firewall (WAF) Pattern.
-
-### Architectural patterns applied
-
-#### **1. Secure Channel Pattern**
-
-The RunPath System applies the Secure Channel Pattern.
-This is evidenced by the connector provided for the web frontend, ensuring that all messages are exchanged through the HTTPS protocol, which encrypts and validates all requests and responses.
-The pattern protects user credentials and sensitive information from potential attackers eavesdropping on the communication channel.
-
-#### **2. Reverse Proxy Pattern**
-
-he RunPath System applies the Reverse Proxy Pattern.
-In the system, two reverse proxies are implemented for the public endpoints (one for the web client and one for the mobile client). These proxies mediate communication between the clients and the system in a secure manner, redirecting requests to their corresponding components and masking all internal infrastructure, including the API Gateway.
-The pattern protects the system from attempts to scan or attack internal services.
-
-#### **3. Network Segmentation Pattern**
-
-The RunPath System applies the Network Segmentation Pattern.
-Each system tier is isolated within a private network, allowing communication only between components in adjacent network layers. This prevents access to private components even if an attacker gains information about their locations.
-The pattern prevents unauthorized entities from sending direct requests to backend components, protecting them from direct attacks.
-
-#### **4. Web Application Firewall (WAF) Pattern**
-The RunPath System applies the Web Application Firewall (WAF) Pattern.
-The system integrates a WAF within the reverse proxy at the web client entry point, establishing a boundary on incoming requests from the same IP address within a given time interval, and displaying a locked window with a warning when the rule is triggered.
-The pattern protects the web frontend component from potential Denial of Service (DoS) attacks.
-
-## Performance and Scalability
-
-### Scenario #1
 
 ### Scenario #2
 
