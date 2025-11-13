@@ -848,10 +848,10 @@ An automated script executed 200 concurrent requests (in batches of 50) directed
 
 * **Source:** 100 legitimate users attempting to log into the system.
 * **Stimulus:** 1100 login requests are sent within one second.
-* **Artifact:** runpath-login component.
+* **Artifact:** The runpath-login component.
 * **Enviroment:** Normal operation under high request traffic.
 * **Response:** The system processes all authentication requests successfully.
-* **Response measure:** All authentication requests are processed in response time less to 20559 miliseconds.
+* **Response measure:** All authentication requests are processed in response time less than 20559 miliseconds.
 
 <p align="center">
 <img src="./imgs/scenario1_authenticationperformance.png">
@@ -868,7 +868,7 @@ An automated script executed 200 concurrent requests (in batches of 50) directed
 * **Artifact:** The runpath-web-frontend component.
 * **Enviroment:** Normal operation under high request traffic.
 * **Response:** The system processes all incoming access requests to the frontend.
-* **Response measure:** All frontend requests are processed in response time of 23 miliseconds.
+* **Response measure:** All frontend requests are processed in response time less than 23 miliseconds.
 
 <p align="center">
 <img src="./imgs/scenario2_frontendperformance.png">
